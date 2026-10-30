@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="First Voice">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;-webkit-text-size-adjust:100%}img{max-width:100%}</style>
+<title>First Voice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one calm column, sticky tab bar; the pitch canvas is the signature surface on every practice view */
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --sunk:#E4E9F1; --ink:#161C2B; --muted:#596277; --line:#D2D8E3;
+  --accent:#C2185B; --accent-ink:#FFFFFF; --accent-soft:#F7DCE7;
+  --good:#12826A; --warn:#A86400; --bad:#BF3527; --note:#BCC5D6;
+  --key-w:#FFFFFF; --key-hi:#F6C9DA; --key-b:#1B2030; --key-edge:#C3CAD7;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131A; --surface:#181C26; --sunk:#222838; --ink:#E9EDF5; --muted:#9AA3B7; --line:#2D3446;
+  --accent:#F0699B; --accent-ink:#200A13; --accent-soft:#3A1D2A;
+  --good:#3BC79E; --warn:#F0A93A; --bad:#F2695B; --note:#3A4357; --key-w:#DCE1EA; --key-hi:#E9A9C2; --key-b:#0B0D12; --key-edge:#0B0D12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131A; --surface:#181C26; --sunk:#222838; --ink:#E9EDF5; --muted:#9AA3B7; --line:#2D3446;
+  --accent:#F0699B; --accent-ink:#200A13; --accent-soft:#3A1D2A;
+  --good:#3BC79E; --warn:#F0A93A; --bad:#F2695B; --note:#3A4357; --key-w:#DCE1EA; --key-hi:#E9A9C2; --key-b:#0B0D12; --key-edge:#0B0D12; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.gutter{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .gutter{display:flex;align-items:center;gap:20px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-0.01em;white-space:nowrap}
+.brand svg{width:30px;height:20px;flex:none}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:999px;font-weight:700;font-size:15px;white-space:nowrap}
+.tabs a:hover{color:var(--ink);background:var(--sunk)}
+.tabs a[aria-current="page"]{color:var(--accent-ink);background:var(--accent)}
+main{padding-block:28px 64px}
+.view{display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.015em}
+h1{font-size:clamp(32px,6vw,54px);line-height:1.04;font-weight:800;max-width:15ch}
+h2{font-size:clamp(22px,3vw,28px);font-weight:700}
+h3{font-size:19px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lede{font-size:18px;color:var(--muted);max-width:62ch}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.mono{font-family:var(--mono)}
+.hero{display:flex;flex-direction:column;gap:14px;padding-block:8px 4px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid transparent;border-radius:999px;padding:10px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);line-height:1.2}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{background:var(--sunk);filter:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.seg{display:inline-flex;background:var(--sunk);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:700;font-size:14px;border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.notice{border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:14px 16px;font-size:15px}
+.notice b{font-weight:700}
+
+/* today */
+.routine{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;counter-reset:step}
+.routine li{counter-increment:step}
+.routine a{display:flex;flex-direction:column;gap:6px;height:100%;padding:16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.routine a:hover{border-color:var(--accent)}
+.routine .top-line{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.routine .top-line::before{content:"Step " counter(step)}
+.routine .done{color:var(--good);font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px}
+.stat{padding:14px 16px;border-radius:12px;background:var(--sunk)}
+.stat .v{font-family:var(--display);font-size:32px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:13px;color:var(--muted)}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hist li{display:grid;grid-template-columns:96px 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;align-items:center}
+.hist li:last-child{border-bottom:0}
+.hist .d{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.hist .s{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill.good{color:var(--good)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+
+/* warm up */
+.breath{display:grid;place-items:center;height:200px;background:var(--sunk);border-radius:12px;position:relative;overflow:hidden}
+.breath .ring{width:150px;height:150px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);transform:scale(.55);transition:transform 1s ease-in-out}
+.breath .lab{position:absolute;inset:auto 0 14px;text-align:center;font-weight:700}
+.breath .cnt{position:absolute;font-family:var(--display);font-size:40px;font-weight:800}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+/* range */
+.big-note{font-family:var(--display);font-weight:800;font-size:clamp(44px,9vw,72px);line-height:1;font-variant-numeric:tabular-nums}
+.kbd-wrap{overflow-x:auto}
+.kbd-wrap svg{display:block;width:100%;min-width:560px;height:auto}
+
+/* pitch */
+.stage{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:640px){.stage{grid-template-columns:minmax(0,1fr)}}
+.target{display:flex;flex-direction:column;gap:6px}
+.meter{position:relative;height:44px;border-radius:10px;background:var(--sunk);overflow:hidden}
+.meter .zone{position:absolute;top:0;bottom:0;left:calc(50% - 17.5%);width:35%;background:var(--good);opacity:.18}
+.meter .mid{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--good)}
+.meter .needle{position:absolute;top:6px;bottom:6px;width:6px;margin-left:-3px;border-radius:3px;background:var(--muted);left:50%;transition:left .08s linear,background .15s}
+.meter .needle.in{background:var(--good)} .meter .needle.off{background:var(--warn)}
+.meter-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted)}
+canvas{display:block;width:100%;border-radius:12px;background:var(--sunk)}
+#laneCv{height:220px}
+#rollCv{height:280px}
+.dots{display:flex;gap:6px}
+.dots span{width:14px;height:14px;border-radius:50%;background:var(--sunk);border:1px solid var(--line)}
+.dots span.ok{background:var(--good);border-color:var(--good)}
+.dots span.no{background:var(--bad);border-color:var(--bad)}
+.dots span.now{border:2px solid var(--accent)}
+.status{font-size:17px;font-weight:700;min-height:1.6em}
+
+/* songs */
+.songlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px}
+.songlist button{font:inherit;text-align:left;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.songlist button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.songlist .t{font-weight:700}
+.songlist .c{font-size:13px;color:var(--muted)}
+label.check{display:inline-flex;align-items:center;gap:8px;font-size:15px}
+
+/* coach */
+.chat{display:flex;flex-direction:column;gap:12px;max-height:min(60vh,560px);overflow-y:auto;padding:4px}
+.msg{max-width:min(620px,88%);padding:12px 14px;border-radius:14px;line-height:1.5;overflow-wrap:anywhere}
+.msg.coach{background:var(--sunk);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--accent);color:var(--accent-ink);align-self:flex-end;border-bottom-right-radius:4px}
+.msg p+p,.msg p+ul,.msg ul+p,.msg p+ol,.msg ol+p{margin-top:8px}
+.msg ul,.msg ol{margin:0;padding-left:20px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{font:inherit;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px}
+.chips button:hover{border-color:var(--accent)}
+.composer{display:flex;gap:10px;align-items:flex-end}
+.composer textarea{flex:1;min-width:0;resize:vertical;min-height:48px;max-height:180px}
+/* mic bar */
+.lvl{height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}
+#lvlFill{height:100%;width:0;background:var(--muted);transition:width .08s linear}
+#lvlFill.on{background:var(--good)}
+/* learn */
+.lessons{display:flex;flex-direction:column;gap:10px}
+.lessons details{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.lessons summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:14px;padding:16px 18px;font-family:var(--display);font-weight:700;font-size:18px}
+.lessons summary::-webkit-details-marker{display:none}
+.lessons summary::after{content:"+";margin-left:auto;font-family:var(--mono);color:var(--muted);font-size:20px}
+.lessons details[open] summary::after{content:"–"}
+.lessons .ln{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:14px}
+.lbody{padding:0 18px 18px 62px;display:flex;flex-direction:column;gap:10px;max-width:calc(62ch + 80px)}
+@media (max-width:520px){.lbody{padding-left:18px}}
+.lbody ul,.lbody ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.gloss{display:grid;grid-template-columns:max-content 1fr;gap:8px 18px;margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:0;color:var(--muted)}
+@media (max-width:480px){.gloss{grid-template-columns:1fr}.gloss dd{margin-bottom:6px}}
+@media (max-width:640px){.btn{padding:12px 18px}}
+@media (max-width:640px){.top{position:static}.top .gutter{gap:8px}.tabs{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;overflow:visible}.tabs a{text-align:center;padding:8px 4px;font-size:14px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="gutter">
+    <div class="brand"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M1 10 C5 1, 9 1, 12 10 S19 19, 22 10 S27 4, 29 10" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/></svg>First Voice</div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#today">Today</a><a href="#learn">Learn</a><a href="#warmup">Warm up</a><a href="#range">Range</a><a href="#ear">Ear</a><a href="#pitch">Pitch</a><a href="#songs">Songs</a><a href="#coach">Coach</a>
+    </nav>
+  </div>
+</header>
+
+<main class="gutter">
+<div class="panel micbar" id="micbar" hidden>
+  <div class="row" style="justify-content:space-between">
+    <label for="micSel"><b>Microphone</b></label>
+    <span class="small muted" id="micMsg">Press Test mic to start</span>
+  </div>
+  <div class="row"><select id="micSel" style="flex:1;min-width:0"><option value="">Default microphone</option></select><button class="btn ghost" id="micTest" type="button">Test mic</button></div>
+  <div class="lvl" aria-hidden="true"><div id="lvlFill"></div></div>
+  <p class="small muted">Speak or hum: the bar should jump. If it stays empty, pick another microphone. Virtual devices from Zoom, Teams or screen recorders often send silence.</p>
+</div>
+
+<!-- TODAY -->
+<section class="view" data-view="today">
+  <div class="hero">
+    <p class="eyebrow">Singing practice for complete beginners</p>
+    <h1>Your voice can learn to find the note.</h1>
+    <p class="lede">Singing in tune is mostly a skill: your ear hears a note and your voice learns to land on it. That gets better with short, regular practice. Ten minutes a day is a good start.</p>
+  </div>
+  <div class="row" style="justify-content:space-between">
+    <h2>Today’s ten minutes</h2>
+    <span class="small muted">Practise with headphones if you can.</span>
+  </div>
+  <ol class="routine" id="routine"></ol>
+  <h2>Your progress</h2>
+  <div class="stats" id="stats"></div>
+  <div class="panel">
+    <h3>Recent practice</h3>
+    <ul class="hist" id="hist"></ul>
+  </div>
+  <p class="small muted">The listening features use your microphone to measure pitch as you sing. Nothing is recorded or sent anywhere; progress stays in this browser.</p>
+</section>
+
+<!-- LEARN -->
+<section class="view" data-view="learn" hidden>
+  <div class="hero">
+    <p class="eyebrow">Short lessons · 2 minutes each</p>
+    <h1>How singing actually works.</h1>
+    <p class="lede">The basics that make the biggest difference for a new singer. Read one a day alongside your practice.</p>
+  </div>
+  <div class="lessons">
+    <details open><summary><span class="ln">1</span>Tone deaf? Almost certainly not</summary><div class="lbody">
+      <p>True tone deafness is rare. If you can hear that a familiar song is sung wrong, or tell a question from a statement by someone’s voice, your ear works. What most “can’t sing” people lack is <b>coordination</b>: the ear hears the note, but the voice hasn’t learned where to put it. That’s a motor skill, like learning to throw at a target, and it improves with feedback. That’s what the Pitch and Ear sections give you.</p></div></details>
+    <details><summary><span class="ln">2</span>Posture: set up the instrument</summary><div class="lbody">
+      <ul><li>Feet hip-width apart, knees soft, weight slightly forward.</li><li>Ribs comfortably open; don’t slump or puff your chest.</li><li>Chin level. Don’t reach up for high notes or tuck down for low ones.</li><li>Shoulders, jaw and tongue loose. Tension anywhere travels to the throat.</li></ul>
+      <p>Sitting is fine too: sit forward on the chair, back away from the backrest.</p></div></details>
+    <details><summary><span class="ln">3</span>Breath support</summary><div class="lbody">
+      <p>Singing is steady air turned into sound. Breathe low so your belly and lower ribs expand, not your shoulders. Then let the air out <b>evenly</b>, like the long “sss” in the warm-up. Uneven air is the main cause of wobbly, cracking or fading notes. Don’t over-fill: a comfortable breath is plenty.</p>
+      <p class="small muted">Try: hiss on “sss” and time it. Aim for 20 seconds of steady, even hiss. Many beginners start at around 10.</p></div></details>
+    <details><summary><span class="ln">4</span>Open vowels make the sound</summary><div class="lbody">
+      <p>You sing on vowels, not consonants. Drop your jaw a little, keep your tongue tip resting behind your bottom teeth, and feel space at the back of your mouth, like the start of a yawn. “Ah”, “oh” and “oo” are the easiest vowels to sing in tune. Narrow “ee” sounds tend to go sharp and tight at first.</p></div></details>
+    <details><summary><span class="ln">5</span>Hum to find the buzz</summary><div class="lbody">
+      <p>Hum on “mm” with lips lightly closed. You should feel a buzz on your lips and around your nose. That buzz is resonance, and it’s a sign the sound is placed forward rather than squeezed in your throat. Then open from “mm” into “mah” and try to keep the same buzzy feeling.</p></div></details>
+    <details><summary><span class="ln">6</span>Matching a note: the method</summary><div class="lbody">
+      <ol><li>Listen to the whole note before you sing. Imagine singing it first.</li><li>Hum it softly. Quiet sounds are easier to control.</li><li>If you’re off, <b>slide</b> slowly up or down until it locks in. The dots turn green when you’re there.</li><li>Hold it and notice how “right” feels. You’re training your body to remember it.</li><li>Stay in your range. Notes near your speaking pitch are the easiest place to start.</li></ol></div></details>
+    <details><summary><span class="ln">7</span>Chest voice and head voice</summary><div class="lbody">
+      <p>Low notes feel buzzy in your chest; high notes feel lighter, up in your head. The point where your voice “flips” between them is called the break. Everyone has one. Don’t push your chest voice higher to avoid it; lip-trill sirens teach your voice to cross the break smoothly over time.</p></div></details>
+    <details><summary><span class="ln">8</span>Looking after your voice</summary><div class="lbody">
+      <ul><li>Drink water through the day. Your vocal folds like being hydrated.</li><li>Always warm up, and stop if anything hurts or scratches.</li><li>Little and often: 10–20 minutes a day beats an hour on Sunday.</li><li>Avoid shouting, whispering a lot, or singing through a cold.</li><li>Hoarseness lasting more than three weeks is a reason to see your GP.</li></ul></div></details>
+  </div>
+  <div class="panel">
+    <h3>Your first four weeks</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Week</th><th>Focus</th><th>Each day (about 10 min)</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>Find your voice</td><td>Warm up · find your range · Ear: Higher or lower · Pitch: Single notes · listen to Twinkle Twinkle</td></tr>
+        <tr><td class="mono">2</td><td>Lock onto notes</td><td>Warm up · Ear · two Pitch rounds (Single notes) · sing Twinkle Twinkle on Slow</td></tr>
+        <tr><td class="mono">3</td><td>Move between notes</td><td>Warm up · Pitch: Steps · Twinkle at Normal · start Ode to Joy</td></tr>
+        <tr><td class="mono">4</td><td>Bigger jumps</td><td>Warm up · Pitch: Leaps · Ode to Joy without the melody · try Amazing Grace · redo your range</td></tr>
+      </tbody></table></div>
+    <p class="small muted">Move on when you’re matching about 4 of 5 notes; stay longer if you need to. Recording yourself on your phone once a week is a great way to hear progress.</p>
+  </div>
+  <div class="panel">
+    <h3>Words you’ll see</h3>
+    <dl class="gloss">
+      <dt>Pitch</dt><dd>How high or low a note is.</dd>
+      <dt>Semitone</dt><dd>The smallest step on a piano, from one key to the very next.</dd>
+      <dt>Cent</dt><dd>A hundredth of a semitone. Within about 25–35 cents sounds in tune to most listeners.</dd>
+      <dt>Sharp / flat</dt><dd>Slightly too high / slightly too low.</dd>
+      <dt>Range</dt><dd>The notes you can sing comfortably, from lowest to highest.</dd>
+      <dt>Interval</dt><dd>The distance between two notes. Steps are small intervals; leaps are bigger.</dd>
+      <dt>Break</dt><dd>Where your voice shifts from chest voice to head voice.</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- EAR -->
+<section class="view" data-view="ear" hidden>
+  <div class="hero">
+    <p class="eyebrow">No microphone needed</p>
+    <h1>Train your ear.</h1>
+    <p class="lede">Your voice can only aim as accurately as your ear can hear. Listen to two notes and decide if the second is higher or lower. The gap shrinks as you get it right.</p>
+  </div>
+  <div class="panel">
+    <div class="grid2" style="align-items:center">
+      <div class="target">
+        <span class="eyebrow" id="earLabel">10 questions</span>
+        <div class="big-note" id="earGap">–</div>
+        <span class="mono small muted">gap between the two notes</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="status" id="earStatus">Press Start, then listen to both notes.</div>
+        <div class="row">
+          <button class="btn" id="earStart">Start</button>
+          <button class="btn ghost" id="earReplay" disabled>Play again</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost earans" data-a="lower" disabled>▼ Second was lower</button>
+          <button class="btn ghost earans" data-a="higher" disabled>▲ Second was higher</button>
+        </div>
+      </div>
+    </div>
+    <div class="dots" id="earDots"></div>
+    <p class="small muted">A semitone is 100 cents. Start around 300 cents (three semitones). Getting below 50 cents means your ear is ready for fine tuning.</p>
+  </div>
+  <div class="panel">
+    <h3>Sing it back (optional)</h3>
+    <p class="small muted">After each question, hum the second note out loud before you answer. Linking what you hear to what you sing is the whole skill.</p>
+  </div>
+</section>
+
+<!-- WARM UP -->
+<section class="view" data-view="warmup" hidden>
+  <div class="hero">
+    <p class="eyebrow">About 3 minutes</p>
+    <h1>Warm up before you sing.</h1>
+    <p class="lede">A cold voice wobbles and strains. These three exercises wake up your breathing and ease your voice through its range.</p>
+  </div>
+  <div class="grid3">
+    <div class="panel">
+      <h3>1. Breathe low</h3>
+      <p class="small muted">Hand on your belly. It should move out as you breathe in; your shoulders stay still. Three rounds.</p>
+      <div class="breath"><div class="ring" id="ring"></div><div class="cnt" id="bCount"></div><div class="lab" id="bLab">Ready when you are</div></div>
+      <div class="row"><button class="btn" id="bStart">Start breathing</button><button class="btn ghost" id="bStop">Stop</button></div>
+    </div>
+    <div class="panel">
+      <h3>2. Lip-trill sirens</h3>
+      <p class="small muted">Close your lips loosely and blow so they flutter, like a child making a motorboat noise. Add voice, then follow the sliding tone up and down. If lip trills won’t come, hum or say “ng” instead.</p>
+      <ol class="steps small"><li>Lips relaxed; press lightly on your cheeks if it helps.</li><li>Keep the air steady; don’t push.</li><li>Slide smoothly; no jumps.</li></ol>
+      <div class="row"><button class="btn" id="sPlay">Play sirens</button></div>
+    </div>
+    <div class="panel">
+      <h3>3. Hum five notes</h3>
+      <p class="small muted">The piano plays do-re-mi-fa-so-fa-mi-re-do, then pauses for you to hum it back. Each round starts a semitone higher.</p>
+      <div class="status" id="hStatus">5 rounds, about 40 seconds</div>
+      <div class="row"><button class="btn" id="hPlay">Start humming</button><button class="btn ghost" id="hStop">Stop</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- RANGE -->
+<section class="view" data-view="range" hidden>
+  <div class="hero">
+    <p class="eyebrow">Do this once, then repeat monthly</p>
+    <h1>Find your range.</h1>
+    <p class="lede">Every song and exercise here is moved into your range, so nothing is too high or too low. Sing an easy “ah” and hold each note for four seconds. Comfortable notes only; never strain.</p>
+  </div>
+  <div class="notice" id="rangeMic" hidden></div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Lowest comfortable note</h3>
+      <p class="small muted">Slide down until your voice starts to get gravelly, then come back up a little and hold that note.</p>
+      <div class="big-note" id="lowOut">–</div>
+      <div class="row"><button class="btn" id="lowRec">Record low note</button><span class="small muted mono" id="lowInfo"></span></div>
+    </div>
+    <div class="panel">
+      <h3>Highest comfortable note</h3>
+      <p class="small muted">Slide up until it starts to feel tight or flips, then come back down a little and hold that note.</p>
+      <div class="big-note" id="highOut">–</div>
+      <div class="row"><button class="btn" id="highRec">Record high note</button><span class="small muted mono" id="highInfo"></span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h3 id="rangeTitle">Your range</h3>
+      <span class="mono small muted" id="liveNote">Live: –</span>
+    </div>
+    <div class="kbd-wrap"><svg id="kbd" viewBox="0 0 700 120" role="img" aria-label="Keyboard showing your range"></svg></div>
+    <p id="voiceType"></p>
+  </div>
+  <div class="panel">
+    <h3>Set it by hand</h3>
+    <p class="small muted">If you can’t use the microphone yet, pick a starting point. Lower voices usually sit around A2 to E4, higher voices around A3 to E5.</p>
+    <div class="row">
+      <button class="btn ghost" id="preLow">Lower voice</button>
+      <button class="btn ghost" id="preHigh">Higher voice</button>
+      <span class="muted small">or</span>
+      <label class="small" for="selLow">From</label><select id="selLow"></select>
+      <label class="small" for="selHigh">to</label><select id="selHigh"></select>
+      <button class="btn" id="manSave">Save range</button>
+    </div>
+  </div>
+</section>
+
+<!-- PITCH -->
+<section class="view" data-view="pitch" hidden>
+  <div class="hero">
+    <p class="eyebrow">The core skill</p>
+    <h1>Match the note.</h1>
+    <p class="lede">Listen to the tone, then sing it on “ah” or “oo”. Hold it in the green zone for just over a second to score. Five notes a round.</p>
+  </div>
+  <div class="notice" id="pitchMic" hidden></div>
+  <div class="row" style="justify-content:space-between">
+    <div class="seg" id="levelSeg" role="group" aria-label="Level">
+      <button data-level="single" aria-pressed="true">Single notes</button>
+      <button data-level="steps" aria-pressed="false">Steps</button>
+      <button data-level="leaps" aria-pressed="false">Leaps</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="ptStart">Start round</button>
+      <button class="btn ghost" id="ptReplay" disabled>Hear it again</button>
+      <button class="btn ghost" id="ptSkip" disabled>Skip</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="stage">
+      <div class="target">
+        <span class="eyebrow" id="ptLabel">Target</span>
+        <div class="big-note" id="ptNote">–</div>
+        <span class="mono small muted" id="ptHz">Press Start round</span>
+        <div class="dots" id="ptDots"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="status" id="ptStatus">Your pitch shows up as a line of dots.</div>
+        <div class="meter" aria-hidden="true"><div class="zone"></div><div class="mid"></div><div class="needle" id="needle"></div></div>
+        <div class="meter-labels"><span>◂ flat (too low)</span><span id="ptCents">–</span><span>sharp (too high) ▸</span></div>
+      </div>
+    </div>
+    <canvas id="laneCv" aria-label="Your pitch over the last five seconds"></canvas>
+  </div>
+  <div class="panel" id="ptResult" hidden></div>
+</section>
+
+<!-- SONGS -->
+<section class="view" data-view="songs" hidden>
+  <div class="hero">
+    <p class="eyebrow">Put it together</p>
+    <h1>Sing a song.</h1>
+    <p class="lede">Each melody is moved into your range. Listen first, then sing along while your pitch traces across the notes. You’ll hear your starting note during the count-in.</p>
+  </div>
+  <div class="notice" id="songMic" hidden></div>
+  <div class="songlist" id="songList"></div>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <div><h3 id="sgTitle">–</h3><p class="small muted" id="sgMeta"></p></div>
+      <div class="row">
+        <label class="small" for="tempo">Speed</label>
+        <select id="tempo"><option value="0.75">Slow</option><option value="1" selected>Normal</option></select>
+        <label class="check"><input type="checkbox" id="guide"> Play melody while I sing</label>
+      </div>
+    </div>
+    <canvas id="rollCv" aria-label="Melody notes and your pitch"></canvas>
+    <div class="row" style="justify-content:space-between">
+      <div class="status" id="sgStatus">Listen first, then sing.</div>
+      <div class="row">
+        <button class="btn ghost" id="sgListen">Listen</button>
+        <button class="btn" id="sgSing">Sing it</button>
+        <button class="btn ghost" id="sgStop">Stop</button>
+      </div>
+    </div>
+    <p class="small muted" id="sgHint">With “Play melody” on, wear headphones, otherwise the microphone hears the piano instead of you.</p>
+  </div>
+  <div class="panel" id="sgResult" hidden></div>
+</section>
+
+<!-- COACH -->
+<section class="view" data-view="coach" hidden>
+  <div class="hero">
+    <p class="eyebrow">Ask anything</p>
+    <h1>Your singing coach.</h1>
+    <p class="lede">Questions about breathing, nerves, high notes or why a note keeps slipping. The coach can see your range and recent scores.</p>
+  </div>
+  <div class="notice" id="coachNote" hidden></div>
+  <div class="panel">
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <div class="chips" id="chips"></div>
+    <form class="composer" id="chatForm">
+      <label for="chatIn" class="small" style="position:absolute;left:-9999px">Message</label>
+      <textarea id="chatIn" rows="2" placeholder="Ask your coach…"></textarea>
+      <button class="btn" type="submit" id="chatSend">Send</button>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NAMES=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const nn=m=>{m=Math.round(m);return NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1)};
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const ftom=f=>69+12*Math.log2(f/440);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dayKey=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- storage ---------- */
+const KEY='firstvoice.v1';
+const S={range:null,history:[]};
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&typeof o==='object'){S.range=o.range||null;S.history=Array.isArray(o.history)?o.history:[];}}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function log(kind,data){S.history.push(Object.assign({kind,date:dayKey(),at:Date.now()},data||{}));if(S.history.length>400)S.history=S.history.slice(-400);save();}
+const DEFAULT_RANGE={low:48,high:67};
+const R=()=>S.range||DEFAULT_RANGE;
+
+/* ---------- audio ---------- */
+let actx=null,master=null;const live=new Set();
+function ac(){if(!actx){actx=new (window.AudioContext||window.webkitAudioContext)();master=actx.createGain();master.gain.value=0.9;master.connect(actx.destination);}if(actx.state==='suspended')actx.resume();return actx;}
+function tone(m,at,dur,vol){vol=vol||0.2;const c=ac();const t0=Math.max(c.currentTime+0.01,at);const f=mtof(m);
+  const g=c.createGain(),o1=c.createOscillator(),o2=c.createOscillator(),g2=c.createGain();
+  o1.type='triangle';o1.frequency.value=f;o2.type='sine';o2.frequency.value=f*2;g2.gain.value=0.22;
+  o1.connect(g);o2.connect(g2);g2.connect(g);g.connect(master);
+  const d=Math.max(0.14,dur),end=t0+d,sus=t0+Math.min(0.3,d*0.5);
+  g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+0.015);
+  g.gain.exponentialRampToValueAtTime(vol*0.5,sus);g.gain.setValueAtTime(vol*0.5,Math.max(sus,end-0.06));
+  g.gain.exponentialRampToValueAtTime(0.0001,end);
+  o1.start(t0);o2.start(t0);o1.stop(end+0.02);o2.stop(end+0.02);
+  const n=[o1,o2];live.add(n);o1.onended=()=>live.delete(n);}
+function click(at,accent){const c=ac();const o=c.createOscillator(),g=c.createGain();o.frequency.value=accent?1600:1100;o.type='sine';
+  g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(0.25,at+0.004);g.gain.exponentialRampToValueAtTime(0.0001,at+0.06);
+  o.connect(g);g.connect(master);o.start(at);o.stop(at+0.08);const n=[o];live.add(n);o.onended=()=>live.delete(n);}
+function glide(path,at,legDur){const c=ac();const o=c.createOscillator(),g=c.createGain();o.type='sine';
+  o.frequency.setValueAtTime(mtof(path[0]),at);for(let i=1;i<path.length;i++)o.frequency.exponentialRampToValueAtTime(mtof(path[i]),at+i*legDur);
+  const end=at+(path.length-1)*legDur;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(0.2,at+0.08);g.gain.setValueAtTime(0.2,end-0.1);g.gain.exponentialRampToValueAtTime(0.0001,end);
+  o.connect(g);g.connect(master);o.start(at);o.stop(end+0.05);const n=[o];live.add(n);o.onended=()=>live.delete(n);}
+function silence(){live.forEach(n=>n.forEach(o=>{try{o.stop()}catch(e){}}));live.clear();}
+
+/* ---------- pitch detection (YIN) ---------- */
+let yinBuf=null;
+function yin(b,sr){const N=b.length;let rms=0;for(let i=0;i<N;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/N);Mic.level=rms;if(rms<0.004)return null;
+  const W=N>>1;if(!yinBuf||yinBuf.length!==W)yinBuf=new Float32Array(W);const d=yinBuf;
+  const minT=Math.max(2,Math.floor(sr/1000)),maxT=Math.min(W-2,Math.floor(sr/70));
+  d[0]=1;let run=0;
+  for(let t=1;t<=maxT;t++){let s=0;for(let i=0;i<W;i++){const x=b[i]-b[i+t];s+=x*x;}run+=s;d[t]=run?s*t/run:1;}
+  let tau=-1;for(let t=minT;t<=maxT;t++){if(d[t]<0.2){while(t+1<=maxT&&d[t+1]<d[t])t++;tau=t;break;}}
+  if(tau<0)return null;
+  const a=d[tau-1],c=d[tau],e=d[tau+1]!==undefined?d[tau+1]:c,den=a-2*c+e;const tt=den?tau+0.5*(a-e)/den:tau;
+  const f=sr/tt;if(f<70||f>1000)return null;return {f,rms};}
+
+const Mic={level:0,on:false,err:null,an:null,buf:null,sr:44100,hist:[],label:'',
+  async start(){const c0=ac();if(this.on)return true;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){this.err='unsupported';return false;}
+    try{const c=c0;let id=null;try{id=localStorage.getItem('firstvoice.mic')}catch(e){}
+      const want=dev=>({audio:Object.assign({echoCancellation:false,noiseSuppression:false,autoGainControl:true},dev?{deviceId:{exact:dev}}:{})});
+      let st;try{st=await navigator.mediaDevices.getUserMedia(want(id));}catch(e){if(!id)throw e;try{localStorage.removeItem('firstvoice.mic')}catch(_){}st=await navigator.mediaDevices.getUserMedia(want(null));}
+      const tr=st.getAudioTracks()[0];this.label=tr?tr.label:'';this.devId=tr&&tr.getSettings?tr.getSettings().deviceId:null;
+      if(c.state!=='running'){try{await c.resume()}catch(e){}}
+      const src=c.createMediaStreamSource(st);const an=c.createAnalyser();an.fftSize=2048;src.connect(an);
+      const mute=c.createGain();mute.gain.value=0;an.connect(mute);mute.connect(c.destination);
+      this.stream=st;this.src=src;this.mute=mute;this.an=an;this.buf=new Float32Array(an.fftSize);this.sr=c.sampleRate;this.on=true;this.err=null;micUI();return true;
+    }catch(e){this.err=(e&&e.name)||'error';micUI();return false;}},
+  stop(){if(this.stream)this.stream.getTracks().forEach(t=>t.stop());try{this.src&&this.src.disconnect();this.mute&&this.mute.disconnect();}catch(e){}this.on=false;this.stream=null;this.level=0;this.hist=[];},
+  async use(id){try{if(id)localStorage.setItem('firstvoice.mic',id);else localStorage.removeItem('firstvoice.mic');}catch(e){}this.stop();return this.start();},
+  read(){this.level=0;this.an.getFloatTimeDomainData(this.buf);const r=yin(this.buf,this.sr);const m=r?ftom(r.f):null;
+    this.hist.push(m);if(this.hist.length>5)this.hist.shift();if(m==null)return null;
+    const v=this.hist.slice(-3).filter(x=>x!=null).sort((a,b)=>a-b);if(v.length<2)return null;
+    return {midi:v[Math.floor(v.length/2)],f:r.f};}};
+
+function micProblem(el){
+  const inside=!!window.claude;let msg;
+  if(inside&&Mic.err!=='NotFoundError')msg='<b>The microphone can’t be used inside Claude’s page viewer.</b> To sing with live feedback, open <b>First-Voice.html</b> (the file in our chat) in Chrome or Edge on your computer and allow the microphone. Listening to songs, warm-ups and the coach all work here.';
+  else if(Mic.err==='NotAllowedError')msg='<b>Microphone access was blocked.</b> Allow it using the icon in your browser’s address bar, then press the button again.';
+  else if(Mic.err==='NotFoundError')msg='<b>No microphone found.</b> Plug in a headset or check your sound settings, then try again.';
+  else msg='<b>The microphone didn’t start.</b> Try Chrome or Edge, and check that no other app is using it.';
+  el.innerHTML=msg;el.hidden=false;}
+
+/* ---------- mic picker ---------- */
+async function micUI(){const sel=$('#micSel'),msg=$('#micMsg');
+  if(Mic.on)msg.textContent='Listening on: '+(Mic.label||'microphone');else if(Mic.err)msg.textContent='Microphone not available ('+Mic.err+')';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)return;
+  try{const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    let n=0;sel.innerHTML=devs.length?devs.map(d=>'<option value="'+esc(d.deviceId)+'">'+esc(d.label||('Microphone '+(++n)))+'</option>').join(''):'<option value="">Default microphone</option>';
+    if(Mic.devId&&devs.some(d=>d.deviceId===Mic.devId))sel.value=Mic.devId;}catch(e){}}
+$('#micSel').onchange=async e=>{ac();$('#micMsg').textContent='Switching…';const ok=await Mic.use(e.target.value);if(!ok)$('#micMsg').textContent='That microphone didn’t start. Try another.';};
+$('#micTest').onclick=async()=>{ac();const ok=await Mic.start();if(!ok){const v=document.querySelector('.view:not([hidden]) .notice');if(v)micProblem(v);}};
+if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener('devicechange',micUI);
+micUI();
+
+/* ---------- frame loop ---------- */
+let onFrame=null,lastT=performance.now();
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(0.1,(now-lastT)/1000);lastT=now;const p=Mic.on?Mic.read():null;const f=$('#lvlFill');if(f){const v=Mic.on?Math.min(100,Math.sqrt(Mic.level)*250):0;f.style.width=v+'%';f.classList.toggle('on',Mic.level>=0.004);}if(onFrame)onFrame(p,dt,now);}
+requestAnimationFrame(loop);
+
+function colors(){const cs=getComputedStyle(document.documentElement);const g=k=>cs.getPropertyValue(k).trim();
+  return{ink:g('--ink'),muted:g('--muted'),line:g('--line'),accent:g('--accent'),good:g('--good'),warn:g('--warn'),bad:g('--bad'),note:g('--note'),sunk:g('--sunk'),soft:g('--accent-soft')};}
+function fit(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return{x,w:r.width,h:r.height};}
+function rr(x,X,Y,W,H,r){r=Math.min(r,H/2,W/2);x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath();}
+function fold(midi,ref){let d=midi-ref;d-=12*Math.round(d/12);return d;}
+
+/* ---------- today ---------- */
+function streak(){const days=new Set(S.history.map(h=>h.date));let n=0;const d=new Date();if(!days.has(dayKey(d)))d.setDate(d.getDate()-1);
+  while(days.has(dayKey(d))){n++;d.setDate(d.getDate()-1);}return n;}
+const SONG_TITLES={};
+function renderToday(){
+  const today=dayKey();const did=k=>S.history.some(h=>h.date===today&&h.kind===k);
+  const items=[
+    ['warmup','3 min','Warm up','Breathing, lip-trill sirens and humming.',did('warmup')],
+    ['range','2 min','Find your range',S.range?'Set: '+nn(S.range.low)+' to '+nn(S.range.high)+'. Redo it monthly.':'Do this first so everything fits your voice.',!!S.range],
+    ['ear','2 min','Train your ear','Higher or lower? No microphone needed.',did('ear')],
+    ['pitch','3 min','Match five notes','Hear a note, sing it back, hold it steady.',did('pitch')],
+    ['songs','2 min','Sing a song','Use what you practised on a real tune.',did('song')]];
+  $('#routine').innerHTML=items.map(i=>'<li><a href="#'+i[0]+'"><span class="top-line">'+(i[4]?'<span class="done">✓ Done</span>':'<span>'+i[1]+'</span>')+'</span><h3>'+i[2]+'</h3><span class="small muted">'+esc(i[3])+'</span></a></li>').join('');
+  const pitch=S.history.filter(h=>h.kind==='pitch');const songs=S.history.filter(h=>h.kind==='song');
+  const matched=pitch.reduce((a,h)=>a+(h.score||0),0);const tried=pitch.reduce((a,h)=>a+(h.of||5),0);
+  const best=songs.length?Math.max(...songs.map(h=>h.score||0))+'%':'–';
+  $('#stats').innerHTML=[[streak(),'day streak'],[new Set(S.history.map(h=>h.date)).size,'days practised'],[tried?matched+'/'+tried:'0','notes matched'],[best,'best song score']]
+    .map(s=>'<div class="stat"><div class="v">'+s[0]+'</div><div class="k">'+s[1]+'</div></div>').join('');
+  const recent=S.history.slice(-8).reverse();
+  if(!recent.length){$('#hist').innerHTML='<li><span class="d">–</span><span class="muted">Nothing yet. Your warm-ups, rounds and songs will appear here.</span><span></span></li>';return;}
+  $('#hist').innerHTML=recent.map(h=>{let label,score='';
+    if(h.kind==='warmup')label='Warm-up: '+(h.what||'');
+    else if(h.kind==='range')label='Range set: '+nn(h.low)+' to '+nn(h.high);
+    else if(h.kind==='ear'){label='Ear training'+(h.finest!=null?' · finest '+h.finest+'¢':'');const c=h.score>=8?'good':h.score>=5?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'/10</span>';}
+    else if(h.kind==='pitch'){label='Pitch round ('+h.level+')';const c=h.score>=4?'good':h.score>=2?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'/'+(h.of||5)+'</span>';}
+    else{label='Song: '+(h.title||h.song);const c=h.score>=70?'good':h.score>=40?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'%</span>';}
+    const d=new Date(h.at);return '<li><span class="d">'+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</span><span>'+esc(label)+'</span><span class="s">'+score+'</span></li>';}).join('');}
+
+/* ---------- warm up ---------- */
+const WU={tok:0,timers:[]};
+function wuClear(){WU.tok++;WU.timers.forEach(clearTimeout);WU.timers=[];silence();$('#ring').style.transform='scale(.55)';$('#bCount').textContent='';}
+function later(fn,ms){const t=WU.tok;WU.timers.push(setTimeout(()=>{if(t===WU.tok)fn()},ms));}
+$('#bStart').onclick=()=>{wuClear();const ring=$('#ring'),lab=$('#bLab'),cnt=$('#bCount');
+  const phases=[['Breathe in through your nose',4,1],['Hold, shoulders relaxed',2,1],['Hiss out slowly: sss…',8,.55]];
+  let ms=0;for(let r=0;r<3;r++)for(const [text,secs,scale] of phases){const st=ms;
+    later(()=>{lab.textContent='Round '+(r+1)+' of 3 · '+text;ring.style.transitionDuration=secs+'s';ring.style.transform='scale('+scale+')';},st);
+    for(let s=0;s<secs;s++)later(()=>{cnt.textContent=secs-s;},st+s*1000);ms+=secs*1000;}
+  later(()=>{lab.textContent='Nice. Your breath is ready.';cnt.textContent='';ring.style.transitionDuration='1s';ring.style.transform='scale(.55)';log('warmup',{what:'breathing'});},ms);};
+$('#bStop').onclick=()=>{wuClear();$('#bLab').textContent='Ready when you are';};
+$('#sPlay').onclick=()=>{wuClear();const r=R();const lo=r.low+2,hi=Math.max(r.low+7,r.high-3);const c=ac();const at=c.currentTime+0.1;
+  glide([lo,hi,lo],at,2.4);glide([lo,hi,lo],at+5.4,2.4);later(()=>log('warmup',{what:'sirens'}),10200);};
+$('#hPlay').onclick=()=>{wuClear();const r=R();const pat=[0,2,4,5,7,5,4,2,0];const nd=0.36,len=pat.length*nd;const st=$('#hStatus');let base=r.low+2;
+  const c=ac();let at=c.currentTime+0.2;
+  for(let k=0;k<5;k++){const b=base+k;const start=at;pat.forEach((s,i)=>tone(b+s,start+i*nd,nd*0.95,0.18));
+    const off=(start-c.currentTime)*1000;later(()=>{st.textContent='Round '+(k+1)+': listen…'},off);later(()=>{st.textContent='Round '+(k+1)+': your turn, hum it'},off+len*1000);
+    at=start+len*2+0.5;}
+  later(()=>{st.textContent='Done. Your voice is warm.';log('warmup',{what:'humming'});},(at-c.currentTime)*1000);};
+$('#hStop').onclick=()=>{wuClear();$('#hStatus').textContent='5 rounds, about 40 seconds';};
+
+/* ---------- range ---------- */
+const TYPES=[['bass',40,64],['baritone',43,67],['tenor',48,72],['alto',53,77],['mezzo-soprano',57,81],['soprano',60,84]];
+function voiceType(lo,hi){const c=(lo+hi)/2;let best=TYPES[0],bd=1e9;for(const t of TYPES){const d=Math.abs(c-(t[1]+t[2])/2);if(d<bd){bd=d;best=t;}}return best[0];}
+const RC={which:null,vals:[],until:0,low:null,high:null};
+function renderRange(){const r=R();const lo=36,hi=84;let whites=[];for(let m=lo;m<=hi;m++)if(![1,3,6,8,10].includes(m%12))whites.push(m);
+  const W=700,kw=W/whites.length;let s='';const C=colors();
+  whites.forEach((m,i)=>{const inR=m>=r.low&&m<=r.high;s+='<rect x="'+(i*kw).toFixed(2)+'" y="0" width="'+(kw-1).toFixed(2)+'" height="96" rx="3" style="fill:'+(inR?'var(--key-hi)':'var(--key-w)')+';stroke:var(--key-edge)"/>';
+    if(m%12===0)s+='<text x="'+(i*kw+kw/2).toFixed(2)+'" y="114" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">'+nn(m)+'</text>';});
+  whites.forEach((m,i)=>{if(i<whites.length-1&&whites[i+1]-m===2){const b=m+1;const inR=b>=r.low&&b<=r.high;s+='<rect x="'+((i+1)*kw-kw*0.32).toFixed(2)+'" y="0" width="'+(kw*0.62).toFixed(2)+'" height="58" rx="2" style="fill:'+(inR?'var(--accent)':'var(--key-b)')+'"/>';}});
+  [r.low,r.high].forEach(m=>{let i=whites.indexOf(m);let x;if(i>=0)x=i*kw+kw/2;else{i=whites.indexOf(m-1);x=(i+1)*kw;}s+='<circle cx="'+x.toFixed(2)+'" cy="80" r="6" style="fill:var(--accent);stroke:var(--key-w);stroke-width:2"/>';});
+  $('#kbd').innerHTML=s;
+  const span=r.high-r.low;
+  $('#rangeTitle').textContent=S.range?'Your range: '+nn(r.low)+' to '+nn(r.high):'Example range (not set yet): '+nn(r.low)+' to '+nn(r.high);
+  $('#voiceType').innerHTML=S.range?'That’s <b>'+span+' semitones</b>, which sits closest to a <b>'+voiceType(r.low,r.high)+'</b> range. Treat this as a starting point, not a label: most new singers start with a narrow range, and it widens with practice.':'<span class="muted">Record your low and high notes above, or set them below, and the songs and exercises will move to fit.</span>';
+  $('#selLow').value=r.low;$('#selHigh').value=r.high;
+  $('#lowOut').textContent=RC.low!=null?nn(RC.low):(S.range?nn(S.range.low):'–');$('#highOut').textContent=RC.high!=null?nn(RC.high):(S.range?nn(S.range.high):'–');}
+(function(){let o='';for(let m=36;m<=84;m++)o+='<option value="'+m+'">'+nn(m)+'</option>';$('#selLow').innerHTML=o;$('#selHigh').innerHTML=o;})();
+function setRange(lo,hi,source){S.range={low:lo,high:hi,source};save();log('range',{low:lo,high:hi});renderRange();}
+$('#preLow').onclick=()=>setRange(45,64,'preset');
+$('#preHigh').onclick=()=>setRange(57,76,'preset');
+$('#manSave').onclick=()=>{let a=+$('#selLow').value,b=+$('#selHigh').value;if(b-a<5){$('#voiceType').textContent='Pick a top note at least five semitones above the bottom note.';return;}setRange(a,b,'manual');};
+async function recordEdge(which){if(RC.which)return;const ok=await Mic.start();if(!ok){micProblem($('#rangeMic'));return;}$('#rangeMic').hidden=true;
+  RC.which=which;RC.vals=[];RC.until=performance.now()+4000;$('#'+which+'Info').textContent='Hold it… 4';}
+$('#lowRec').onclick=()=>recordEdge('low');$('#highRec').onclick=()=>recordEdge('high');
+function rangeFrame(p,dt,now){if(Mic.on)$('#liveNote').textContent='Live: '+(p?nn(p.midi)+' · '+Math.round(p.f)+' Hz':(Mic.level<0.004?'too quiet':'listening…'))+' · level '+Math.min(100,Math.round(Mic.level*1000));
+  if(!RC.which)return;const w=RC.which;if(p)RC.vals.push(p.midi);const left=Math.ceil((RC.until-now)/1000);
+  if(left>0){$('#'+w+'Info').textContent='Hold it… '+left;return;}
+  RC.which=null;if(RC.vals.length<25){$('#'+w+'Info').textContent='I couldn’t hear a steady note. Sing “ah” a bit louder and try again.';return;}
+  const v=RC.vals.slice().sort((a,b)=>a-b);const med=Math.round(v[Math.floor(v.length/2)]);RC[w]=med;$('#'+w+'Out').textContent=nn(med);$('#'+w+'Info').textContent='Got it';
+  if(RC.low!=null&&RC.high!=null){if(RC.high-RC.low<4){$('#highInfo').textContent='That’s very close to your low note. Try sliding a little higher.';return;}setRange(RC.low,RC.high,'measured');}}
+
+/* ---------- pitch trainer ---------- */
+const PT={tok:0,running:false,level:'single',targets:[],i:0,phase:'idle',cur:null,hold:0,elapsed:0,listenAt:0,bias:0,voiced:0,results:[],trace:[]};
+$$('#levelSeg button').forEach(b=>b.onclick=()=>{if(PT.running)return;PT.level=b.dataset.level;$$('#levelSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));});
+function makeTargets(level){const r=R();let lo=r.low+2,hi=r.high-3;if(hi-lo<5){const c=Math.round((r.low+r.high)/2);lo=c-3;hi=c+3;}
+  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));const out=[];let cur=rnd(lo,hi);
+  for(let i=0;i<5;i++){if(i>0){if(level==='single'){let n;do{n=rnd(lo,hi)}while(n===cur);cur=n;}
+    else{const st=level==='steps'?[1,2]:[3,4,5,7];let n,t=0;do{n=cur+st[rnd(0,st.length-1)]*(Math.random()<.5?-1:1);t++;}while((n<lo||n>hi)&&t<40);cur=clamp(n,lo,hi);}}
+    out.push(cur);}return out;}
+function renderDots(){$$('#ptDots span').forEach((d,i)=>{const r=PT.results[i];d.className=r?(r.ok?'ok':'no'):(PT.running&&i===PT.i?'now':'');});}
+function setMeter(c){const n=$('#needle');if(c==null){n.style.left='50%';n.className='needle';$('#ptCents').textContent='–';return;}
+  n.style.left=clamp(50+c/2,1,99)+'%';n.className='needle '+(Math.abs(c)<=35?'in':'off');$('#ptCents').textContent=(c>0?'+':'')+Math.round(c)+' cents';}
+async function ptStart(){ptStop();const ok=await Mic.start();if(!ok){micProblem($('#pitchMic'));return;}$('#pitchMic').hidden=true;
+  PT.running=true;PT.targets=makeTargets(PT.level);PT.i=0;PT.results=[];PT.trace=[];$('#ptResult').hidden=true;
+  $('#ptStart').textContent='Restart';$('#ptReplay').disabled=false;$('#ptSkip').disabled=false;ptNext();}
+function ptPlay(){PT.phase='play';tone(PT.cur,ac().currentTime+0.05,1.3,0.22);PT.listenAt=performance.now()+1650;$('#ptStatus').textContent='Listen…';setMeter(null);}
+function ptNext(){PT.cur=PT.targets[PT.i];PT.hold=0;PT.elapsed=0;PT.bias=0;PT.voiced=0;$('#ptLabel').textContent='Note '+(PT.i+1)+' of 5';
+  $('#ptNote').textContent=nn(PT.cur);$('#ptHz').textContent=Math.round(mtof(PT.cur))+' Hz';renderDots();ptPlay();}
+function ptDone(ok){const r={target:PT.cur,ok,time:PT.elapsed,bias:PT.voiced?PT.bias/PT.voiced:null,heard:PT.voiced>10};PT.results.push(r);PT.phase='gap';renderDots();
+  let msg;if(ok)msg=PT.elapsed<3?'Spot on!':'Got it. Nice and steady.';
+  else if(!r.heard)msg='I didn’t hear you. Sing “ah” a bit louder, closer to the mic.';
+  else if(r.bias>15)msg='Close. You were mostly a little sharp (too high).';
+  else if(r.bias<-15)msg='Close. You were mostly a little flat (too low).';
+  else msg='Close. It wobbled around the note; try holding one steady sound.';
+  $('#ptStatus').textContent=msg;const t=PT.tok;
+  setTimeout(()=>{if(t!==PT.tok)return;PT.i++;if(PT.i<5)ptNext();else ptEnd();},1300);}
+function ptEnd(){PT.running=false;PT.phase='idle';PT.cur=null;$('#ptReplay').disabled=true;$('#ptSkip').disabled=true;$('#ptStart').textContent='Start round';
+  const ok=PT.results.filter(r=>r.ok).length;const bs=PT.results.filter(r=>r.bias!=null).map(r=>r.bias);const bias=bs.length?bs.reduce((a,b)=>a+b,0)/bs.length:0;
+  log('pitch',{level:PT.level,score:ok,of:5,bias:Math.round(bias)});
+  $('#ptNote').textContent=ok+'/5';$('#ptLabel').textContent='Round complete';$('#ptHz').textContent='';$('#ptStatus').textContent=ok>=4?'Great round.':ok>=2?'Good progress. Try another round.':'Keep going. This is exactly how the skill builds.';
+  const tip=Math.abs(bias)<12?'Your misses were spread evenly around the notes, which usually means the note isn’t steady yet. Breathe low and keep the air flowing.':bias>0?'You tend to land a little sharp. Relax your throat and think of the note as slightly lower.':'You tend to land a little flat. Lift your eyebrows slightly and aim at the top of the note.';
+  const det=PT.results.map(r=>nn(r.target)+(r.ok?' ✓':' ✗')).join(', ');
+  const box=$('#ptResult');box.hidden=false;box.innerHTML='<h3>Round summary: '+ok+' of 5</h3><p class="small mono muted">'+esc(det)+'</p><p>'+tip+'</p><div class="row"><button class="btn" id="ptAgain">Another round</button><button class="btn ghost" id="ptAsk">Ask the coach about this</button></div>';
+  $('#ptAgain').onclick=ptStart;
+  $('#ptAsk').onclick=()=>askCoach('I just did a '+PT.level+' pitch-matching round and matched '+ok+' of 5 notes ('+det+'). My average was '+Math.abs(Math.round(bias))+' cents '+(bias>=0?'sharp':'flat')+'. What should I work on next?');}
+function ptStop(){PT.tok++;PT.running=false;PT.phase='idle';silence();}
+$('#ptStart').onclick=ptStart;
+$('#ptReplay').onclick=()=>{if(PT.running&&PT.phase!=='gap')ptPlay();};
+$('#ptSkip').onclick=()=>{if(PT.running&&PT.phase!=='gap')ptDone(false);};
+function pitchFrame(p,dt,now){
+  if(PT.running&&PT.phase==='play'&&now>=PT.listenAt){PT.phase='listen';$('#ptStatus').textContent='Your turn: sing '+nn(PT.cur);}
+  if(p){const ref=PT.cur!=null?PT.cur:Math.round(p.midi);const d=fold(p.midi,ref);
+    if(PT.phase==='listen'||!PT.running){PT.trace.push({t:now,m:ref+d,ok:Math.abs(d)<=0.35});if(PT.trace.length>500)PT.trace.shift();}
+    if(!PT.running){$('#ptHz').textContent='You: '+nn(p.midi)+' · '+Math.round(p.f)+' Hz';}}
+  if(PT.running&&PT.phase==='listen'){PT.elapsed+=dt;
+    if(p){const c=fold(p.midi,PT.cur)*100;PT.voiced++;PT.bias+=c;setMeter(c);
+      if(Math.abs(c)<=35)PT.hold+=dt;else PT.hold=Math.max(0,PT.hold-dt*0.6);
+      $('#ptHz').textContent='You: '+nn(PT.cur+c/100)+(PT.hold>0.1?' · holding '+Math.min(1.2,PT.hold).toFixed(1)+'s':'');}
+    else{PT.hold=Math.max(0,PT.hold-dt*0.3);}
+    if(PT.hold>=1.2)ptDone(true);else if(PT.elapsed>10)ptDone(false);}
+  drawLane(now);}
+function drawLane(now){const {x,w,h}=fit($('#laneCv'));const C=colors();x.clearRect(0,0,w,h);
+  const centre=PT.cur!=null?PT.cur:Math.round((R().low+R().high)/2);const span=7,L=46;const y=m=>h/2-(m-centre)/span*(h/2-14);
+  x.font='11px "IBM Plex Mono", monospace';x.lineWidth=1;
+  for(let m=centre-span;m<=centre+span;m++){const yy=Math.round(y(m))+0.5;x.strokeStyle=C.line;x.globalAlpha=0.6;x.beginPath();x.moveTo(L,yy);x.lineTo(w-6,yy);x.stroke();x.globalAlpha=1;
+    if((m-centre)%2===0){x.fillStyle=C.muted;x.fillText(nn(m),6,yy+4);}}
+  if(PT.cur!=null){x.fillStyle=C.good;x.globalAlpha=0.16;x.fillRect(L,y(PT.cur+0.35),w-L-6,y(PT.cur-0.35)-y(PT.cur+0.35));x.globalAlpha=1;
+    x.strokeStyle=C.accent;x.lineWidth=2;x.beginPath();x.moveTo(L,y(PT.cur));x.lineTo(w-6,y(PT.cur));x.stroke();x.fillStyle=C.accent;x.fillText(nn(PT.cur),6,y(PT.cur)+4);}
+  const win=5000;for(const pt of PT.trace){const age=now-pt.t;if(age>win)continue;const px=L+(1-age/win)*(w-L-10);const py=y(pt.m);if(py<4||py>h-4)continue;
+    x.fillStyle=pt.ok?C.good:C.warn;x.beginPath();x.arc(px,py,2.6,0,Math.PI*2);x.fill();}
+  if(!Mic.on&&!PT.running){x.fillStyle=C.muted;x.font='14px "Atkinson Hyperlegible", sans-serif';x.textAlign='center';x.fillText('Your pitch appears here when you sing',(w+L)/2,h-16);x.textAlign='left';}}
+
+/* ---------- songs ---------- */
+const SONGS=[
+ {id:'twinkle',title:'Twinkle, Twinkle, Little Star',credit:'Traditional melody · words Jane Taylor, 1806',level:'Easiest',bpm:92,beats:4,notes:[
+  [60,1,'Twin'],[60,1,'kle'],[67,1,'twin'],[67,1,'kle'],[69,1,'lit'],[69,1,'tle'],[67,2,'star,'],
+  [65,1,'How'],[65,1,'I'],[64,1,'won'],[64,1,'der'],[62,1,'what'],[62,1,'you'],[60,2,'are.'],
+  [67,1,'Up'],[67,1,'a'],[65,1,'bove'],[65,1,'the'],[64,1,'world'],[64,1,'so'],[62,2,'high,'],
+  [67,1,'Like'],[67,1,'a'],[65,1,'dia'],[65,1,'mond'],[64,1,'in'],[64,1,'the'],[62,2,'sky.'],
+  [60,1,'Twin'],[60,1,'kle'],[67,1,'twin'],[67,1,'kle'],[69,1,'lit'],[69,1,'tle'],[67,2,'star,'],
+  [65,1,'How'],[65,1,'I'],[64,1,'won'],[64,1,'der'],[62,1,'what'],[62,1,'you'],[60,2,'are.']]},
+ {id:'ode',title:'Ode to Joy',credit:'Beethoven, 1824 · sung on “la”',level:'Easy, stepwise',bpm:100,beats:4,notes:[
+  [64,1,'la'],[64,1,'la'],[65,1,'la'],[67,1,'la'],[67,1,'la'],[65,1,'la'],[64,1,'la'],[62,1,'la'],[60,1,'la'],[60,1,'la'],[62,1,'la'],[64,1,'la'],[64,1.5,'la'],[62,.5,'la'],[62,2,'la'],
+  [64,1,'la'],[64,1,'la'],[65,1,'la'],[67,1,'la'],[67,1,'la'],[65,1,'la'],[64,1,'la'],[62,1,'la'],[60,1,'la'],[60,1,'la'],[62,1,'la'],[64,1,'la'],[62,1.5,'la'],[60,.5,'la'],[60,2,'la']]},
+ {id:'grace',title:'Amazing Grace',credit:'Traditional tune · words John Newton, 1779 · first line',level:'Medium, wider',bpm:84,beats:3,notes:[
+  [62,1,'A'],[67,2,'ma'],[71,.5,'zing'],[67,.5,''],[71,2,'grace,'],[69,1,'how'],[67,2,'sweet'],[64,1,'the'],[62,2,'sound'],
+  [62,1,'that'],[67,2,'saved'],[71,.5,'a'],[67,.5,''],[71,2,'wretch'],[69,1,'like'],[74,3,'me.']]},
+ {id:'auld',title:'Auld Lang Syne',credit:'Traditional tune · words Robert Burns, 1788 · first line',level:'Medium, leaps',bpm:84,beats:4,notes:[
+  [60,1,'Should'],[65,1.5,'auld'],[65,.5,'ac'],[65,1,'quain'],[69,1,'tance'],[67,1.5,'be'],[65,.5,'for'],[67,1,'got'],[69,1,'and'],[65,1.5,'nev'],[65,.5,'er'],[69,1,'brought'],[72,1,'to'],[74,3,'mind?']]}];
+SONGS.forEach(s=>SONG_TITLES[s.id]=s.title);
+const SP={tok:0,prep:null,running:false,mode:null,startAt:0,spb:0.6,hits:[],total:[],trace:[],scores:null,lastTarget:null};
+function prep(song){const r=R();const ms=song.notes.map(n=>n[0]);const mn=Math.min(...ms),mx=Math.max(...ms);const shift=Math.round((r.low+r.high)/2-(mn+mx)/2);
+  let t=0;const notes=song.notes.map(([m,b,l])=>{const o={m:m+shift,b0:t,b,l};t+=b;return o;});return {song,notes,total:t,mn:mn+shift,mx:mx+shift};}
+function renderSongList(){$('#songList').innerHTML=SONGS.map(s=>{const sc=S.history.filter(h=>h.kind==='song'&&h.song===s.id).map(h=>h.score);const best=sc.length?' · best '+Math.max(...sc)+'%':'';
+  return '<button data-song="'+s.id+'" aria-pressed="'+(SP.prep&&SP.prep.song.id===s.id)+'"><span class="t">'+esc(s.title)+'</span><span class="c">'+esc(s.level)+best+'</span></button>';}).join('');
+  $$('#songList button').forEach(b=>b.onclick=()=>selectSong(b.dataset.song));}
+function selectSong(id){spStop();const s=SONGS.find(x=>x.id===id)||SONGS[0];SP.prep=prep(s);SP.scores=null;SP.trace=[];
+  $('#sgTitle').textContent=s.title;$('#sgMeta').textContent=s.credit+' · in your key, from '+nn(SP.prep.mn)+' to '+nn(SP.prep.mx);
+  $('#sgStatus').textContent='Listen first, then sing.';$('#sgResult').hidden=true;renderSongList();}
+function spStop(){SP.tok++;if(SP.running){SP.running=false;$('#sgStatus').textContent='Stopped.';}silence();}
+async function spStart(mode){spStop();const P=SP.prep;if(!P)return;
+  if(mode==='sing'){const ok=await Mic.start();if(!ok){micProblem($('#songMic'));return;}$('#songMic').hidden=true;}
+  const c=ac();const tf=+$('#tempo').value;SP.spb=60/(P.song.bpm*tf);const cb=P.song.beats;const t0=c.currentTime+0.2;
+  for(let k=0;k<cb;k++)click(t0+k*SP.spb,k===0);
+  if(mode==='sing')tone(P.notes[0].m,t0,cb*SP.spb*0.92,0.12);
+  SP.startAt=t0+cb*SP.spb;const guide=mode==='listen'||$('#guide').checked;
+  if(guide)P.notes.forEach(n=>tone(n.m,SP.startAt+n.b0*SP.spb,n.b*SP.spb*0.93,mode==='listen'?0.2:0.09));
+  SP.mode=mode;SP.running=true;SP.hits=P.notes.map(()=>0);SP.total=P.notes.map(()=>0);SP.trace=[];SP.scores=null;SP.lastTarget=null;$('#sgResult').hidden=true;
+  $('#sgStatus').textContent=mode==='sing'?'Count-in… here’s your first note':'Count-in…';}
+function spFinish(){SP.running=false;silence();const P=SP.prep;
+  if(SP.mode!=='sing'){$('#sgStatus').textContent='Now try singing it.';return;}
+  const sc=P.notes.map((n,i)=>SP.total[i]>3?SP.hits[i]/SP.total[i]:null);SP.scores=sc;const v=sc.filter(x=>x!=null);
+  const overall=v.length?Math.round(100*v.reduce((a,b)=>a+b,0)/v.length):0;log('song',{song:P.song.id,title:P.song.title,score:overall});renderSongList();
+  const good=sc.filter(x=>x!=null&&x>=0.6).length;const voiced=SP.trace.length;
+  $('#sgStatus').textContent='Score: '+overall+'%';
+  const box=$('#sgResult');box.hidden=false;
+  const msg=voiced<30?'I barely heard you. Sing out a bit more, or move closer to the microphone.':overall>=70?'Lovely. Try it at normal speed, or with the melody turned off.':overall>=40?'Good effort. The green notes landed; replay and focus on the red ones.':'A tough one. Try the Slow speed with the melody playing (headphones on), then go without it.';
+  box.innerHTML='<h3>'+overall+'% in tune · '+good+' of '+P.notes.length+' notes landed</h3><p>'+msg+'</p><div class="row"><button class="btn" id="sgAgain">Sing again</button><button class="btn ghost" id="sgAsk">Ask the coach about this</button></div>';
+  $('#sgAgain').onclick=()=>spStart('sing');
+  const missed=P.notes.filter((n,i)=>sc[i]!=null&&sc[i]<0.4).map(n=>n.l||'(held)').slice(0,6).join(', ');
+  $('#sgAsk').onclick=()=>askCoach('I just sang "'+P.song.title+'" and scored '+overall+'% in tune.'+(missed?' The words I missed most were: '+missed+'.':'')+' How can I improve?');}
+$('#sgListen').onclick=()=>spStart('listen');$('#sgSing').onclick=()=>spStart('sing');$('#sgStop').onclick=spStop;
+$('#guide').onchange=()=>{};
+function songFrame(p,dt,now){const P=SP.prep;if(!P)return;let t=null;
+  if(SP.running){t=ac().currentTime-SP.startAt;const spb=SP.spb;let idx=-1;for(let i=0;i<P.notes.length;i++){const n=P.notes[i];if(t>=n.b0*spb&&t<(n.b0+n.b)*spb){idx=i;break;}}
+    if(t>=0&&idx>=0&&SP.mode)$('#sgStatus').textContent=(SP.mode==='sing'?'Sing: ':'')+(P.notes[idx].l||'…')+'  ('+nn(P.notes[idx].m)+')';
+    if(SP.mode==='sing'){if(p&&t>-0.3){const ref=idx>=0?P.notes[idx].m:(SP.lastTarget!=null?SP.lastTarget:P.notes[0].m);const d=fold(p.midi,ref);SP.trace.push({t,m:ref+d,ok:Math.abs(d)<=0.5});if(SP.trace.length>4000)SP.trace.shift();}
+      if(idx>=0){const n=P.notes[idx];const s=n.b0*spb,e=(n.b0+n.b)*spb,fr=(t-s)/(e-s);if(fr>0.15&&fr<0.92){SP.total[idx]++;if(p&&Math.abs(fold(p.midi,n.m))<=0.5)SP.hits[idx]++;}}}
+    if(idx>=0)SP.lastTarget=P.notes[idx].m;
+    if(t>P.total*spb+0.5)spFinish();}
+  drawRoll(SP.running?t:null);}
+function drawRoll(t){const P=SP.prep;if(!P)return;const {x,w,h}=fit($('#rollCv'));const C=colors();x.clearRect(0,0,w,h);
+  const lo=P.mn-2,hi=P.mx+2,top=14,bot=t==null?14:30,L=46;const rowH=(h-top-bot)/(hi-lo+1);const y=m=>top+(hi-m)*rowH;
+  x.font='11px "IBM Plex Mono", monospace';const used=new Set(P.notes.map(n=>n.m));
+  for(let m=lo;m<=hi;m++){const yy=y(m);if(used.has(m)){x.fillStyle=C.line;x.globalAlpha=0.35;x.fillRect(L,yy,w-L,rowH);x.globalAlpha=1;x.fillStyle=C.muted;x.fillText(nn(m),6,yy+rowH/2+4);}}
+  const spb=SP.running?SP.spb:60/(P.song.bpm*(+$('#tempo').value||1));
+  let X;if(t==null){const pp=(w-L-12)/(P.total*spb);X=s=>L+4+s*pp;}else{const pps=Math.max(120,w/7),play=L+(w-L)*0.26;X=s=>play+(s-t)*pps;}
+  x.save();x.beginPath();x.rect(L,0,w-L,h);x.clip();
+  P.notes.forEach((n,i)=>{const x0=X(n.b0*spb),x1=X((n.b0+n.b)*spb);if(x1<L||x0>w)return;
+    let col=C.note;if(SP.scores&&SP.scores[i]!=null)col=SP.scores[i]>=0.6?C.good:SP.scores[i]>=0.3?C.warn:C.bad;
+    if(t!=null&&t>=n.b0*spb&&t<(n.b0+n.b)*spb)col=C.accent;
+    x.fillStyle=col;rr(x,x0+1,y(n.m)+rowH*0.12,Math.max(3,x1-x0-3),rowH*0.76,4);x.fill();
+    if(t!=null&&n.l){x.fillStyle=C.ink;x.font='13px "Atkinson Hyperlegible", sans-serif';x.fillText(n.l,x0+2,h-10);}});
+  if(t!=null){const pps=Math.max(120,w/7),play=L+(w-L)*0.26;
+    for(const pt of SP.trace){if(pt.t<t-4||pt.t>t)continue;const px=play+(pt.t-t)*pps;const py=y(pt.m)+rowH/2;x.fillStyle=pt.ok?C.ink:C.warn;x.beginPath();x.arc(px,py,2.6,0,Math.PI*2);x.fill();}
+    x.strokeStyle=C.accent;x.lineWidth=2;x.beginPath();x.moveTo(play,0);x.lineTo(play,h);x.stroke();}
+  x.restore();}
+
+/* ---------- ear trainer ---------- */
+const EAR={tok:0,running:false,q:0,gap:300,finest:null,correct:0,a:null,b:null,ans:null,res:[],locked:true};
+const earDots=$('#earDots');earDots.innerHTML='<span></span>'.repeat(10);
+function earRender(){$$('#earDots span').forEach((d,i)=>{const r=EAR.res[i];d.className=r===undefined?(EAR.running&&i===EAR.q?'now':''):(r?'ok':'no');});
+  $('#earGap').textContent=Math.round(EAR.gap)+'¢';$$('.earans').forEach(b=>b.disabled=EAR.locked);$('#earReplay').disabled=!EAR.running;}
+function earPlay(){const c=ac();const t=c.currentTime+0.1;silence();
+  const pa=mtof(EAR.a),pb=pa*Math.pow(2,(EAR.b-EAR.a)/12);
+  [[pa,t],[pb,t+1.0]].forEach(([f,at])=>{const m=ftom(f);tone(m,at,0.8,0.2);});
+  EAR.locked=true;earRender();const tk=EAR.tok;setTimeout(()=>{if(tk!==EAR.tok)return;EAR.locked=false;earRender();$('#earStatus').textContent='Was the second note higher or lower?';},1900);
+  $('#earStatus').textContent='Listen…';}
+function earNext(){const r=R();const mid=Math.round((r.low+r.high)/2);EAR.a=mid-3+Math.floor(Math.random()*7);
+  EAR.ans=Math.random()<.5?'higher':'lower';EAR.b=EAR.a+(EAR.ans==='higher'?1:-1)*EAR.gap/100;$('#earLabel').textContent='Question '+(EAR.q+1)+' of 10';earPlay();}
+function earStart(){EAR.tok++;EAR.running=true;EAR.q=0;EAR.gap=300;EAR.finest=null;EAR.correct=0;EAR.res=[];earRender();earNext();}
+function earAnswer(a){if(EAR.locked||!EAR.running)return;EAR.locked=true;const ok=a===EAR.ans;EAR.res.push(ok);
+  if(ok){EAR.correct++;EAR.finest=EAR.finest==null?EAR.gap:Math.min(EAR.finest,EAR.gap);}
+  $('#earStatus').textContent=ok?'Correct. It was '+EAR.ans+'.':'Not quite. It was '+EAR.ans+'. Listen again with “Play again”.';
+  EAR.gap=ok?Math.max(10,EAR.gap*0.7):Math.min(400,EAR.gap*1.5);EAR.q++;earRender();const tk=EAR.tok;
+  setTimeout(()=>{if(tk!==EAR.tok)return;if(EAR.q<10)earNext();else earEnd();},1500);}
+function earEnd(){EAR.running=false;EAR.locked=true;const f=EAR.finest!=null?Math.round(EAR.finest):null;log('ear',{score:EAR.correct,of:10,finest:f});
+  $('#earLabel').textContent='Round complete';$('#earGap').textContent=EAR.correct+'/10';
+  $('#earStatus').textContent=f==null?'Tricky. Try again; the gap resets to three semitones.':'Finest gap you heard correctly: '+f+' cents. '+(f<=50?'Excellent ear.':f<=100?'Good, that’s finer than a semitone.':'Keep at it; this sharpens quickly.');earRender();$('#earGap').textContent=EAR.correct+'/10';}
+function earStop(){EAR.tok++;EAR.running=false;EAR.locked=true;}
+$('#earStart').onclick=earStart;$('#earReplay').onclick=()=>{if(EAR.running&&EAR.a!=null)earPlay();};
+$$('.earans').forEach(b=>b.onclick=()=>earAnswer(b.dataset.a));
+
+/* ---------- coach ---------- */
+const chat=$('#chat');const msgs=[];
+function md(text){const blocks=String(text).trim().split(/\n\s*\n/);return blocks.map(b=>{const lines=b.split('\n').filter(l=>l.trim());
+  const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  if(lines.length&&lines.every(l=>/^\s*[-*•]\s+/.test(l)))return '<ul>'+lines.map(l=>'<li>'+inl(l.replace(/^\s*[-*•]\s+/,''))+'</li>').join('')+'</ul>';
+  if(lines.length&&lines.every(l=>/^\s*\d+[.)]\s+/.test(l)))return '<ol>'+lines.map(l=>'<li>'+inl(l.replace(/^\s*\d+[.)]\s+/,''))+'</li>').join('')+'</ol>';
+  return '<p>'+lines.map(inl).join('<br>')+'</p>';}).join('');}
+function bubble(who,text){const d=document.createElement('div');d.className='msg '+who;d.innerHTML=md(text);chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;}
+bubble('coach','Hi! I’m your singing coach. Lots of people who think they “can’t sing” just haven’t trained their ear and voice to work together yet, and that’s very learnable.\n\nAsk me anything, or tap a question below to get started.');
+const CHIPS=['Am I tone deaf?','Why can’t I sing in tune?','How should I breathe when singing?','Plan my first week','Look at my latest results'];
+$('#chips').innerHTML=CHIPS.map(c=>'<button type="button">'+esc(c)+'</button>').join('');
+$$('#chips button').forEach(b=>b.onclick=()=>sendCoach(b.textContent));
+let samplePromise=null;
+function getSample(){if(samplePromise)return samplePromise;if(window.claude&&typeof window.claude.use==='function'){samplePromise=window.claude.use('sample').catch(()=>null);return samplePromise;}return Promise.resolve(null);}
+function learnerContext(){const r=S.range?('Range '+nn(S.range.low)+' to '+nn(S.range.high)+' ('+S.range.source+', closest to '+voiceType(S.range.low,S.range.high)+').'):'Range not measured yet.';
+  const rec=S.history.slice(-10).map(h=>h.kind==='pitch'?'pitch round ('+h.level+') '+h.score+'/5, average '+Math.abs(h.bias)+' cents '+(h.bias>=0?'sharp':'flat'):h.kind==='song'?'song "'+(h.title||h.song)+'" '+h.score+'% in tune':h.kind==='ear'?'ear training '+h.score+'/10'+(h.finest!=null?', finest gap '+h.finest+' cents':''):h.kind==='warmup'?'warm-up ('+h.what+')':'range set').join('; ');
+  return r+' Practice days so far: '+new Set(S.history.map(h=>h.date)).size+'. Recent activity (oldest first): '+(rec||'none yet')+'.';}
+const PREAMBLE='You are a warm, patient, practical singing coach inside a practice app called First Voice. The learner is an adult complete beginner who believes they cannot sing and has always wanted to. Use UK English spelling. Keep replies under 150 words unless they ask for more. Use plain language, no jargon without a quick explanation. Give at most one or two concrete exercises they can try right now, step by step. Be encouraging but honest; never flatter. Pitch-matching trouble is usually a trainable ear-voice coordination skill, so frame progress that way. If they mention pain, hoarseness lasting more than three weeks, or losing their voice, tell them to rest and see a GP or an ENT specialist. The app has these sections: Learn (short lessons on tone deafness myths, posture, breath support, vowels, humming resonance, a pitch-matching method, chest and head voice, vocal health, a four-week plan and a glossary), Ear (higher-or-lower game that adapts the gap in cents), Warm up (low breathing, lip-trill sirens, five-note humming), Range (measures lowest and highest comfortable notes), Pitch (match single notes, steps or leaps with a tuner; hold within 35 cents for 1.2 seconds), Songs (Twinkle Twinkle, Ode to Joy, Amazing Grace, Auld Lang Syne, all moved into their range, scored on pitch). Suggest sections when useful.\n\nLearner data: ';
+const OFFLINE=[
+ [/tune|flat|sharp|pitch|note/i,'The most common reason is that your ear and voice haven’t learned to coordinate yet, not that you’re tone deaf.\n\n1. Play one note in Pitch and hum it softly before singing it.\n2. If you’re off, slide slowly up or down until the dots go green.\n3. Notice how “right” feels, then repeat.\n\nFive minutes a day of this makes a real difference within a few weeks.'],
+ [/breath|breathe|air/i,'Breathe low, into your belly, not your chest.\n\n1. Hand on your stomach, shoulders relaxed.\n2. Breathe in through your nose for 4; your hand moves out.\n3. Hiss out on “sss” for 8 or more, steady and even.\n\nThat steady hiss is the airflow you want under every sung note. The breathing exercise in Warm up runs this for you.'],
+ [/week|plan|start|routine/i,'A simple first week, ten minutes a day:\n\n- Day 1: Find your range, play the Ear game, then one Pitch round on Single notes.\n- Days 2–4: Warm up, two Pitch rounds, Listen to Twinkle Twinkle then sing it on Slow.\n- Days 5–7: Warm up, one Steps round, sing Twinkle at normal speed and try Ode to Joy.\n\nConsistency beats long sessions.'],
+ [/high|top|strain|crack|flip/i,'High notes come from relaxed, steady air, not pushing. Use lip-trill sirens to slide up gently, stop before it hurts, and stay in your comfortable range for songs. Your range widens over weeks of easy practice.'],
+ [/nerv|shy|embarrass|confiden/i,'Very normal. Practise when you have the house to yourself, start quietly, and focus on the dots rather than how you sound. Confidence follows small wins: a few green notes a day add up.']];
+async function sendCoach(text){text=(text||'').trim();if(!text)return;bubble('me',text);msgs.push({role:'user',text});$('#chatIn').value='';
+  const b=bubble('coach','Thinking…');$('#chatSend').disabled=true;
+  try{const s=await getSample();
+    if(!s){const hit=OFFLINE.find(o=>o[0].test(text));const ans=(hit?hit[1]:'Start each session with the warm-ups, do a Pitch round, then a song. Small, daily practice is what builds the skill.')+'\n\n(Offline tips: the full AI coach answers when this page is opened inside Claude.)';
+      b.innerHTML=md(ans);msgs.push({role:'assistant',text:ans});return;}
+    const input=msgs.map((m,i)=>({role:m.role,content:i===0?PREAMBLE+learnerContext()+'\n\nLearner: '+m.text:(m.role==='user'&&i===msgs.length-1?'[Updated learner data: '+learnerContext()+']\n\n'+m.text:m.text)}));
+    const res=await s(input,{cache:false,onText:({text})=>{if(text){b.innerHTML=md(text);chat.scrollTop=chat.scrollHeight;}}});
+    const ans=(res&&res.text)||'Sorry, I didn’t catch that. Could you ask again?';b.innerHTML=md(ans);msgs.push({role:'assistant',text:ans});
+  }catch(e){const code=e&&e.code;b.innerHTML=md(code==='not_granted'?'The coach needs permission to answer. Allow it from the prompt or the page’s Permissions menu, then ask again.':code==='rate_limited'?'I’m getting a lot of questions right now. Give it a minute and ask again.':'Something went wrong reaching the coach. Please try again.');msgs.pop();}
+  finally{$('#chatSend').disabled=false;chat.scrollTop=chat.scrollHeight;}}
+function askCoach(text){location.hash='#coach';setTimeout(()=>sendCoach(text),50);}
+$('#chatForm').addEventListener('submit',e=>{e.preventDefault();sendCoach($('#chatIn').value);});
+$('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCoach($('#chatIn').value);}});
+setTimeout(()=>{if(!(window.claude&&typeof window.claude.use==='function')){const n=$('#coachNote');n.hidden=false;n.innerHTML='<b>Offline tips mode.</b> The AI coach answers when this page is opened inside Claude. Here you’ll get built-in tips instead.';}},800);
+
+/* ---------- routing ---------- */
+const VIEWS=['today','learn','warmup','range','ear','pitch','songs','coach'];
+const FRAMES={range:rangeFrame,pitch:pitchFrame,songs:songFrame};
+function stopAll(){wuClear();ptStop();spStop();earStop();RC.which=null;}
+function route(){let v=(location.hash||'').slice(1);if(!VIEWS.includes(v))v='today';stopAll();
+  $$('.view').forEach(s=>s.hidden=s.dataset.view!==v);$$('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  onFrame=FRAMES[v]||null;const mb=$('#micbar');if(FRAMES[v]){const sec=$('.view[data-view="'+v+'"]');sec.querySelector('.hero').after(mb);mb.hidden=false;}else mb.hidden=true;if(v==='today')renderToday();if(v==='range')renderRange();if(v==='songs')selectSong(SP.prep?SP.prep.song.id:'twinkle');window.scrollTo(0,0);}
+window.addEventListener('hashchange',route);
+SP.prep=prep(SONGS[0]);
+route();
+})();
+</script>
+
+</body>
+</html>
