@@ -662,7 +662,7 @@ function rangeFrame(p,dt,now){if(Mic.on)$('#liveNote').textContent='Live: '+(p?n
   if(left>0){$('#'+w+'Info').textContent='Hold it… '+left;return;}
   RC.which=null;if(RC.vals.length<25){$('#'+w+'Info').textContent='I couldn’t hear a steady note. Sing “ah” a bit louder and try again.';return;}
   const v=RC.vals.slice().sort((a,b)=>a-b);const med=Math.round(v[Math.floor(v.length/2)]);RC[w]=med;$('#'+w+'Out').textContent=nn(med);$('#'+w+'Info').textContent='Got it';
-  if(RC.low!=null&&RC.high!=null){if(RC.high-RC.low<4){$('#highInfo').textContent='That’s very close to your low note. Try sliding a little higher.';return;}setRange(RC.low,RC.high,'measured');}}
+  if(RC.low!=null&&RC.high!=null){if(RC.high-RC.low<4){$('#'+(w==='low'?'lowInfo':'highInfo')).textContent='That’s very close to your other note. Record it again, sliding further '+(w==='low'?'down':'up')+'.';return;}$('#lowInfo').textContent='Saved';$('#highInfo').textContent='Saved';setRange(RC.low,RC.high,'measured');}}
 
 /* ---------- pitch trainer ---------- */
 const PT={tok:0,running:false,level:'single',targets:[],i:0,phase:'idle',cur:null,hold:0,elapsed:0,listenAt:0,bias:0,voiced:0,results:[],trace:[]};
