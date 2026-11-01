@@ -157,6 +157,19 @@ label.check{display:inline-flex;align-items:center;gap:8px;font-size:15px}
 .lvl{height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}
 #lvlFill{height:100%;width:0;background:var(--muted);transition:width .08s linear}
 #lvlFill.on{background:var(--good)}
+/* my songs */
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#msProgress{display:flex;flex-direction:column;gap:8px}
+#msProgFill{height:100%;width:0;background:var(--accent);transition:width .15s}
+.msnow{display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:16px}
+.msnow .nx{text-align:right}
+.msnow .nx .mono{font-size:20px}
+.cue{font-family:var(--display);font-weight:800;font-size:clamp(18px,4vw,26px);text-align:center;min-height:1.3em;color:var(--muted)}
+.cue.ok{color:var(--good)} .cue.up{color:var(--warn)}
+#msCv{height:260px}
+.seekrow input{flex:1;min-width:0;accent-color:var(--accent)}
+.hard{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hard li{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:var(--sunk)}
 /* learn */
 .lessons{display:flex;flex-direction:column;gap:10px}
 .lessons details{background:var(--surface);border:1px solid var(--line);border-radius:14px}
@@ -176,8 +189,7 @@ th{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:up
 .gloss dt{font-weight:700}
 .gloss dd{margin:0;color:var(--muted)}
 @media (max-width:480px){.gloss{grid-template-columns:1fr}.gloss dd{margin-bottom:6px}}
-@media (max-width:640px){.btn{padding:12px 18px}}
-@media (max-width:640px){.top{position:static}.top .gutter{gap:8px}.tabs{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;overflow:visible}.tabs a{text-align:center;padding:8px 4px;font-size:14px}}
+@media (max-width:640px){.btn{padding:11px 16px}.top{position:static}.top .gutter{gap:8px}.tabs{flex-basis:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;overflow:visible}.tabs a{text-align:center;padding:8px 2px;font-size:13px}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -188,7 +200,7 @@ th{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:up
   <div class="gutter">
     <div class="brand"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M1 10 C5 1, 9 1, 12 10 S19 19, 22 10 S27 4, 29 10" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/></svg>First Voice</div>
     <nav class="tabs" aria-label="Sections">
-      <a href="#today">Today</a><a href="#learn">Learn</a><a href="#warmup">Warm up</a><a href="#range">Range</a><a href="#ear">Ear</a><a href="#pitch">Pitch</a><a href="#songs">Songs</a><a href="#coach">Coach</a>
+      <a href="#today">Today</a><a href="#learn">Learn</a><a href="#warmup">Warm up</a><a href="#range">Range</a><a href="#ear">Ear</a><a href="#pitch">Pitch</a><a href="#songs">Songs</a><a href="#mysongs">My songs</a><a href="#coach">Coach</a>
     </nav>
   </div>
 </header>
@@ -457,6 +469,88 @@ th{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:up
   <div class="panel" id="sgResult" hidden></div>
 </section>
 
+<!-- MY SONGS -->
+<section class="view" data-view="mysongs" hidden>
+  <div class="hero">
+    <p class="eyebrow">Your own music</p>
+    <h1>Learn your songs.</h1>
+    <p class="lede">Add a song file and the app finds the melody notes. Sing along and it tells you, note by note, whether to go higher or lower. Loop the tricky bits, slow them down, or practise them one note at a time.</p>
+  </div>
+  <div class="notice" id="msMic" hidden></div>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h3>Your songs</h3>
+      <label class="btn" for="msFile">Add a song</label>
+      <input type="file" id="msFile" class="vh" accept="audio/*,.mp3,.m4a,.wav,.aac">
+    </div>
+    <div id="msProgress" hidden>
+      <div class="status" id="msProgText">Finding the notes…</div>
+      <div class="lvl"><div id="msProgFill"></div></div>
+    </div>
+    <div class="songlist" id="msList"></div>
+    <p class="small muted" id="msEmpty">No songs yet. Add an MP3, M4A or WAV from your Files app or computer. Songs bought or streamed in Apple Music or Spotify can’t be added; you need the file itself.</p>
+    <p class="small muted">Best results come from a vocal-only track (an acapella) or a voice memo of someone singing the tune. With a full band, instruments can confuse the note finder, so turn on “Play the notes” to check they sound right. Songs stay on this device.</p>
+  </div>
+
+  <div class="panel" id="msPlayer" hidden>
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div style="min-width:0;flex:1"><h3 id="msTitle" style="overflow-wrap:anywhere"></h3><p class="small muted" id="msMeta"></p></div>
+      <button class="btn ghost" id="msDelete" type="button">Delete</button>
+    </div>
+    <div class="msnow">
+      <div><span class="eyebrow">Now</span><div class="big-note" id="msNow">–</div></div>
+      <div class="cue" id="msCue" aria-live="polite"></div>
+      <div class="nx"><span class="eyebrow">Next</span><div class="mono" id="msNext">–</div></div>
+    </div>
+    <canvas id="msCv" aria-label="Melody notes, your loop and your pitch"></canvas>
+    <div class="row seekrow">
+      <span class="mono small" id="msTime">0:00</span>
+      <input type="range" id="msSeek" min="0" max="1000" value="0" aria-label="Position in song">
+      <span class="mono small" id="msDur">0:00</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="msPlay" type="button">Play</button>
+      <button class="btn ghost" id="msBack" type="button">Back 5s</button>
+      <button class="btn ghost" id="msA" type="button">Loop from here</button>
+      <button class="btn ghost" id="msB" type="button">Loop to here</button>
+      <button class="btn ghost" id="msClear" type="button" hidden>Clear loop</button>
+    </div>
+    <div class="row">
+      <label class="small" for="msRate">Speed</label>
+      <select id="msRate"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option></select>
+      <label class="small" for="msVol">Song volume</label>
+      <input type="range" id="msVol" min="0" max="100" value="80" style="width:110px">
+      <label class="check"><input type="checkbox" id="msGuide"> Play the notes</label>
+      <label class="check"><input type="checkbox" id="msSing" checked> Score my singing</label>
+    </div>
+    <div class="status small" id="msStatus">Press Play to listen first. Wear headphones when you sing along, so the microphone only hears you.</div>
+  </div>
+
+  <div class="panel" id="msStepPanel" hidden>
+    <h3>Practise note by note</h3>
+    <p class="small muted">Plays each note of <span id="msScope">the song from where you are</span> as a clear tone. Sing it and hold it for half a second to move on.</p>
+    <div class="stage">
+      <div class="target">
+        <span class="eyebrow" id="stLabel">Ready</span>
+        <div class="big-note" id="stNote">–</div>
+        <span class="mono small muted" id="stTime"></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="status" id="stStatus">Set a loop around a tricky bit, then start.</div>
+        <div class="meter" aria-hidden="true"><div class="zone"></div><div class="mid"></div><div class="needle" id="stNeedle"></div></div>
+        <div class="meter-labels"><span>◂ too low</span><span id="stCents">–</span><span>too high ▸</span></div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" id="stStart" type="button">Start note practice</button>
+      <button class="btn ghost" id="stAgain" type="button" disabled>Hear it again</button>
+      <button class="btn ghost" id="stSkip" type="button" disabled>Skip</button>
+      <button class="btn ghost" id="stStop" type="button" disabled>Stop</button>
+    </div>
+  </div>
+  <div class="panel" id="msResult" hidden></div>
+</section>
+
 <!-- COACH -->
 <section class="view" data-view="coach" hidden>
   <div class="hero">
@@ -607,6 +701,8 @@ function renderToday(){
   $('#hist').innerHTML=recent.map(h=>{let label,score='';
     if(h.kind==='warmup')label='Warm-up: '+(h.what||'');
     else if(h.kind==='range')label='Range set: '+nn(h.low)+' to '+nn(h.high);
+    else if(h.kind==='mysong'){label='Your song: '+(h.title||'');const c=h.score>=70?'good':h.score>=40?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'%</span>';}
+    else if(h.kind==='mystep'){label='Note practice: '+(h.title||'');const c=h.score/h.of>=0.7?'good':h.score/h.of>=0.4?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'/'+h.of+'</span>';}
     else if(h.kind==='ear'){label='Ear training'+(h.finest!=null?' · finest '+h.finest+'¢':'');const c=h.score>=8?'good':h.score>=5?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'/10</span>';}
     else if(h.kind==='pitch'){label='Pitch round ('+h.level+')';const c=h.score>=4?'good':h.score>=2?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'/'+(h.of||5)+'</span>';}
     else{label='Song: '+(h.title||h.song);const c=h.score>=70?'good':h.score>=40?'warn':'bad';score='<span class="pill '+c+'">'+h.score+'%</span>';}
@@ -826,6 +922,190 @@ function earStop(){EAR.tok++;EAR.running=false;EAR.locked=true;}
 $('#earStart').onclick=earStart;$('#earReplay').onclick=()=>{if(EAR.running&&EAR.a!=null)earPlay();};
 $$('.earans').forEach(b=>b.onclick=()=>earAnswer(b.dataset.a));
 
+/* ---------- my songs ---------- */
+const fmtT=s=>{s=Math.max(0,s||0);const m=Math.floor(s/60),r=Math.floor(s%60);return m+':'+String(r).padStart(2,'0');};
+const IDB={db:null,
+  open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{const r=indexedDB.open('firstvoice',1);r.onupgradeneeded=()=>r.result.createObjectStore('songs',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(r.result)};r.onerror=()=>rej(r.error);});},
+  async run(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('songs',mode);const r=fn(t.objectStore('songs'));let out;if(r)r.onsuccess=()=>{out=r.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);});},
+  all(){return this.run('readonly',s=>s.getAll())},put(o){return this.run('readwrite',s=>s.put(o))},del(id){return this.run('readwrite',s=>s.delete(id))}};
+
+const MS={songs:[],cur:null,audio:null,gain:null,url:null,loopA:null,loopB:null,hits:[],tot:[],trace:[],lastIdx:-1,singOn:false,scored:false,seeking:false,lastUi:0,lblKey:'',delArm:0,lo:48,hi:72};
+const yieldNow=()=>new Promise(r=>setTimeout(r,0));
+
+async function msAnalyse(file,prog){
+  const ab=await file.arrayBuffer();const c=ac();
+  const buf=await new Promise((res,rej)=>{try{const pr=c.decodeAudioData(ab,res,rej);if(pr&&pr.then)pr.then(res,rej);}catch(e){rej(e)}});
+  if(!buf||buf.duration<1)throw new Error('too short');
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;let sr=16000,off;
+  try{off=new OAC(1,Math.ceil(buf.duration*sr),sr);}catch(e){sr=22050;off=new OAC(1,Math.ceil(buf.duration*sr),sr);}
+  const src=off.createBufferSource();src.buffer=buf;const hp=off.createBiquadFilter();hp.type='highpass';hp.frequency.value=90;
+  const lp=off.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;src.connect(hp);hp.connect(lp);lp.connect(off.destination);src.start(0);
+  const rb=await new Promise((res,rej)=>{off.oncomplete=e=>res(e.renderedBuffer);try{const pr=off.startRendering();if(pr&&pr.then)pr.then(res,rej);}catch(e){rej(e)}});
+  const x=rb.getChannelData(0);let peak=0;for(let i=0;i<x.length;i+=4){const v=Math.abs(x[i]);if(v>peak)peak=v;}
+  const N=sr>16000?1408:1024,W=N>>1,hop=Math.round(sr*0.025),frames=Math.max(0,Math.floor((x.length-N)/hop));
+  const minT=Math.floor(sr/1100),maxT=Math.min(W-2,Math.floor(sr/80)),gate=peak*0.02,d=new Float32Array(W),raw=new Float32Array(frames).fill(NaN);
+  for(let fI=0;fI<frames;fI++){const o=fI*hop;let rms=0;for(let i=0;i<N;i+=2)rms+=x[o+i]*x[o+i];rms=Math.sqrt(rms/(N/2));
+    if(rms>=gate){d[0]=1;let run=0;
+      for(let t=1;t<=maxT;t++){let s=0;for(let i=0;i<W;i++){const v=x[o+i]-x[o+i+t];s+=v*v;}run+=s;d[t]=run?s*t/run:1;}
+      let tau=-1;for(let t=minT;t<=maxT;t++){if(d[t]<0.12){while(t+1<=maxT&&d[t+1]<d[t])t++;tau=t;break;}}
+      if(tau>0){const a=d[tau-1],b=d[tau],e=tau+1<=maxT?d[tau+1]:b,den=a-2*b+e;const tt=den?tau+0.5*(a-e)/den:tau;const f=sr/tt;if(f>=80&&f<=1100)raw[fI]=ftom(f);}}
+    if(fI%120===0){prog(fI/frames);await yieldNow();}}
+  // smooth: 5-frame median, then fix octave slips against the local median
+  const med=new Float32Array(frames).fill(NaN),tmp=[];
+  for(let i=0;i<frames;i++){tmp.length=0;for(let j=i-2;j<=i+2;j++)if(j>=0&&j<frames&&raw[j]===raw[j])tmp.push(raw[j]);if(tmp.length>=3&&raw[i]===raw[i]){tmp.sort((a,b)=>a-b);med[i]=tmp[tmp.length>>1];}}
+  for(let i=0;i<frames;i++){const v=med[i];if(v!==v)continue;tmp.length=0;for(let j=i-12;j<=i+12;j+=2)if(j>=0&&j<frames&&med[j]===med[j])tmp.push(med[j]);
+    if(tmp.length<5)continue;tmp.sort((a,b)=>a-b);const ref=tmp[tmp.length>>1];if(Math.abs(v-ref-12)<1)med[i]=v-12;else if(Math.abs(v-ref+12)<1)med[i]=v+12;}
+  // notes: runs of steady pitch at least 120 ms long
+  const dt=hop/sr,off0=N/2/sr,notes=[];let st=-1,sum=0,cnt=0;
+  const close=i=>{if(st>=0&&(i-st)*dt>=0.12)notes.push({t0:st*dt+off0,t1:i*dt+off0,m:sum/cnt});st=-1;sum=0;cnt=0;};
+  for(let i=0;i<=frames;i++){const v=i<frames?med[i]:NaN;
+    if(v===v&&st>=0&&Math.abs(v-sum/cnt)<0.7){sum+=v;cnt++;continue;}
+    close(i);if(v===v){st=i;sum=v;cnt=1;}}
+  const merged=[];for(const n of notes){const p=merged[merged.length-1];
+    if(p&&n.t0-p.t1<0.09&&Math.round(p.m)===Math.round(n.m)){const a=p.t1-p.t0,b=n.t1-n.t0;p.m=(p.m*a+n.m*b)/(a+b);p.t1=n.t1;}else merged.push(n);}
+  prog(1);
+  return{duration:buf.duration,hop:dt,off:off0,contour:med,notes:merged};}
+
+function msRange(s){const ms=s.notes.map(n=>n.m).sort((a,b)=>a-b);if(!ms.length){MS.lo=48;MS.hi=72;return;}
+  let lo=Math.floor(ms[Math.floor(ms.length*0.03)])-2,hi=Math.ceil(ms[Math.floor(ms.length*0.97)])+2;if(hi-lo<12){const c=(hi+lo)/2;lo=Math.floor(c-6);hi=Math.ceil(c+6);}MS.lo=lo;MS.hi=hi;}
+
+function msRenderList(){const L=$('#msList');$('#msEmpty').hidden=MS.songs.length>0;
+  L.innerHTML=MS.songs.map(s=>'<button type="button" data-id="'+esc(s.id)+'" aria-pressed="'+(MS.cur&&MS.cur.id===s.id)+'"><span class="t">'+esc(s.name)+'</span><span class="c">'+fmtT(s.duration)+' · '+s.notes.length+' notes'+(s.best!=null?' · best '+s.best+'%':'')+'</span></button>').join('');
+  $$('#msList button').forEach(b=>b.onclick=()=>msLoad(MS.songs.find(s=>s.id===b.dataset.id)));}
+
+function msAudio(){if(MS.audio)return MS.audio;const a=document.createElement('audio');a.preload='auto';a.setAttribute('playsinline','');a.playsInline=true;
+  try{a.preservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}
+  try{const c=ac();const src=c.createMediaElementSource(a);MS.gain=c.createGain();src.connect(MS.gain);MS.gain.connect(c.destination);}catch(e){MS.gain=null;}
+  a.addEventListener('play',()=>{$('#msPlay').textContent='Pause';});
+  a.addEventListener('pause',()=>{$('#msPlay').textContent='Play';$('#msCue').textContent='';msSummary();});
+  a.addEventListener('loadedmetadata',()=>{$('#msDur').textContent=fmtT(a.duration);});
+  MS.audio=a;msVol();return a;}
+function msVol(){const v=(+$('#msVol').value)/100;if(MS.gain)MS.gain.gain.value=v;else if(MS.audio)MS.audio.volume=v;}
+
+function msLoad(s){if(!s)return;msStopAll();MS.cur=s;msRange(s);const a=msAudio();if(MS.url)URL.revokeObjectURL(MS.url);MS.url=URL.createObjectURL(s.blob);a.src=MS.url;
+  MS.loopA=MS.loopB=null;MS.hits=s.notes.map(()=>0);MS.tot=s.notes.map(()=>0);MS.trace=[];MS.scored=false;MS.lblKey='';
+  $('#msTitle').textContent=s.name;
+  const ms=s.notes.map(n=>n.m);$('#msMeta').textContent=s.notes.length?(s.notes.length+' notes found · melody from '+nn(Math.min(...ms))+' to '+nn(Math.max(...ms))+(S.range?' · your range '+nn(S.range.low)+'–'+nn(S.range.high):'')):'No clear melody found in this file. Try a vocal-only version.';
+  $('#msPlayer').hidden=false;$('#msStepPanel').hidden=!s.notes.length;$('#msResult').hidden=true;$('#msDur').textContent=fmtT(s.duration);$('#msTime').textContent='0:00';$('#msSeek').value=0;
+  msLoopUI();msRenderList();$('#msStatus').textContent='Press Play to listen first. Wear headphones when you sing along, so the microphone only hears you.';}
+
+function msLoopUI(){const on=MS.loopA!=null&&MS.loopB!=null;$('#msClear').hidden=MS.loopA==null;
+  $('#msScope').textContent=on?'your loop ('+fmtT(MS.loopA)+'–'+fmtT(MS.loopB)+')':'the song from where you are';}
+
+$('#msFile').addEventListener('change',async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;
+  if(f.size>80*1024*1024){$('#msProgress').hidden=false;$('#msProgText').textContent='That file is over 80 MB. Try a shorter song or an MP3.';return;}
+  msStopAll();$('#msProgress').hidden=false;$('#msProgText').textContent='Reading '+f.name+'…';$('#msProgFill').style.width='0%';
+  try{const r=await msAnalyse(f,v=>{$('#msProgFill').style.width=Math.round(v*100)+'%';$('#msProgText').textContent='Finding the notes… '+Math.round(v*100)+'%';});
+    const song=Object.assign({id:String(Date.now()),name:f.name.replace(/\.[^.]+$/,''),blob:f,best:null,added:Date.now()},r);
+    MS.songs.unshift(song);try{await IDB.put(song);}catch(err){}
+    $('#msProgress').hidden=true;msLoad(song);
+  }catch(err){$('#msProgText').textContent='Couldn’t read that file. Try an MP3, M4A or WAV that plays on this device.';$('#msProgFill').style.width='0%';}});
+
+$('#msPlay').onclick=()=>{if(!MS.cur)return;ac();const a=msAudio();if(!a.paused){a.pause();return;}
+  if(MS.scored){MS.hits=MS.cur.notes.map(()=>0);MS.tot=MS.cur.notes.map(()=>0);MS.trace=[];MS.scored=false;$('#msResult').hidden=true;}
+  a.playbackRate=+$('#msRate').value;try{a.preservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}
+  if(MS.loopA!=null&&MS.loopB!=null&&(a.currentTime<MS.loopA||a.currentTime>=MS.loopB-0.05))a.currentTime=MS.loopA;
+  MS.lastIdx=-1;const pr=a.play();if(pr&&pr.catch)pr.catch(err=>{$('#msStatus').textContent='This file won’t play here ('+(err.name||'error')+').';});
+  if($('#msSing').checked){MS.singOn=Mic.on;Mic.start().then(ok=>{MS.singOn=ok;if(!ok)micProblem($('#msMic'));else $('#msMic').hidden=true;});}else MS.singOn=false;};
+$('#msBack').onclick=()=>{const a=MS.audio;if(!a)return;a.currentTime=Math.max(MS.loopA!=null?MS.loopA:0,a.currentTime-5);MS.lastIdx=-1;};
+$('#msA').onclick=()=>{const a=MS.audio;if(!a)return;MS.loopA=a.currentTime;if(MS.loopB==null||MS.loopB<=MS.loopA+0.5)MS.loopB=Math.min(MS.cur.duration,MS.loopA+8);msLoopUI();$('#msStatus').textContent='Loop set from '+fmtT(MS.loopA)+' to '+fmtT(MS.loopB)+'. Move on and press “Loop to here” to change the end.';};
+$('#msB').onclick=()=>{const a=MS.audio;if(!a)return;const t=a.currentTime;if(MS.loopA==null||t<=MS.loopA+0.5){MS.loopB=t;MS.loopA=Math.max(0,t-8);}else MS.loopB=t;msLoopUI();$('#msStatus').textContent='Looping '+fmtT(MS.loopA)+' to '+fmtT(MS.loopB)+'.';};
+$('#msClear').onclick=()=>{MS.loopA=MS.loopB=null;msLoopUI();$('#msStatus').textContent='Loop cleared.';};
+$('#msRate').onchange=()=>{if(MS.audio)MS.audio.playbackRate=+$('#msRate').value;};
+$('#msVol').oninput=msVol;
+$('#msSeek').addEventListener('input',()=>{MS.seeking=true;const a=MS.audio;if(!a||!MS.cur)return;a.currentTime=(+$('#msSeek').value/1000)*MS.cur.duration;MS.lastIdx=-1;$('#msTime').textContent=fmtT(a.currentTime);});
+$('#msSeek').addEventListener('change',()=>{MS.seeking=false;});
+$('#msDelete').onclick=async()=>{const s=MS.cur;if(!s)return;const b=$('#msDelete');
+  if(Date.now()-MS.delArm>3000){MS.delArm=Date.now();b.textContent='Tap again to delete';setTimeout(()=>{if(Date.now()-MS.delArm>=3000)b.textContent='Delete';},3100);return;}
+  MS.delArm=0;b.textContent='Delete';msStopAll();try{await IDB.del(s.id);}catch(e){}MS.songs=MS.songs.filter(x=>x.id!==s.id);MS.cur=null;
+  if(MS.audio){MS.audio.removeAttribute('src');MS.audio.load();}$('#msPlayer').hidden=true;$('#msStepPanel').hidden=true;$('#msResult').hidden=true;msRenderList();};
+
+function noteAt(ns,t){let lo=0,hi=ns.length-1,k=-1;while(lo<=hi){const m=(lo+hi)>>1;if(ns[m].t0<=t){k=m;lo=m+1}else hi=m-1;}return k;}
+
+function msSummary(){const s=MS.cur;if(!s||MS.scored||ST.on)return;const idx=[];s.notes.forEach((n,i)=>{if(MS.tot[i]>=4)idx.push(i);});if(idx.length<3)return;
+  MS.scored=true;const r=i=>MS.hits[i]/MS.tot[i];const landed=idx.filter(i=>r(i)>=0.5).length;const pct=Math.round(100*landed/idx.length);
+  s.best=s.best==null?pct:Math.max(s.best,pct);IDB.put(s).catch(()=>{});log('mysong',{title:s.name,score:pct});msRenderList();
+  const hard=idx.slice().sort((a,b)=>r(a)-r(b)).filter(i=>r(i)<0.5).slice(0,4).sort((a,b)=>a-b);
+  const tip=pct>=75?'Lovely. Try it at full speed, or turn off “Play the notes”.':pct>=45?'Good work. Loop the notes below and practise them one at a time.':'This one’s tricky. Loop a short section at 75% speed with “Play the notes” on, then try note-by-note practice.';
+  const box=$('#msResult');box.hidden=false;
+  box.innerHTML='<h3>'+pct+'% of notes landed ('+landed+' of '+idx.length+')</h3><p>'+tip+'</p>'+(hard.length?'<p class="small muted">Notes to work on:</p><ul class="hard">'+hard.map(i=>{const n=s.notes[i];return '<li><span><b>'+nn(n.m)+'</b> <span class="mono small muted">at '+fmtT(n.t0)+' · '+Math.round(r(i)*100)+'% in tune</span></span><button class="btn ghost" type="button" data-i="'+i+'">Loop this bit</button></li>';}).join('')+'</ul>':'')+
+    '<div class="row"><button class="btn ghost" type="button" id="msAsk">Ask the coach about this</button></div>';
+  $$('#msResult .hard button').forEach(b=>b.onclick=()=>{const n=s.notes[+b.dataset.i];MS.loopA=Math.max(0,n.t0-2);MS.loopB=Math.min(s.duration,n.t1+1.5);msLoopUI();MS.audio.currentTime=MS.loopA;
+    $('#msStatus').textContent='Looping '+fmtT(MS.loopA)+' to '+fmtT(MS.loopB)+'. Press Play, or use note-by-note practice below.';$('#msPlayer').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('#msAsk').onclick=()=>askCoach('I sang along to my own song "'+s.name+'" and landed '+pct+'% of the notes. The notes I found hardest were: '+(hard.map(i=>nn(s.notes[i].m)).join(', ')||'none in particular')+'. My range is '+(S.range?nn(S.range.low)+' to '+nn(S.range.high):'not measured')+'. How should I practise this song?');}
+
+/* note-by-note practice */
+const ST={on:false,list:[],i:0,phase:'idle',hold:0,el:0,listenAt:0,tok:0,res:[]};
+function setNeedle(el,lab,c,tol){if(c==null){el.style.left='50%';el.className='needle';lab.textContent='–';return;}
+  el.style.left=clamp(50+c/2,1,99)+'%';el.className='needle '+(Math.abs(c)<=tol?'in':'off');lab.textContent=(c>0?'+':'')+Math.round(c)+' cents';}
+function stButtons(){$('#stStart').disabled=ST.on;$('#stAgain').disabled=!ST.on;$('#stSkip').disabled=!ST.on;$('#stStop').disabled=!ST.on;}
+async function stStart(){const s=MS.cur;if(!s)return;ac();if(MS.audio)MS.audio.pause();
+  const ok=await Mic.start();if(!ok){micProblem($('#msMic'));return;}$('#msMic').hidden=true;
+  const a=MS.audio,from=MS.loopA!=null?MS.loopA:(a?a.currentTime:0),to=MS.loopB!=null?MS.loopB:Infinity;
+  ST.list=s.notes.filter(n=>n.t0>=from-0.05&&n.t1<=to+0.05&&n.t1-n.t0>=0.15).slice(0,40);
+  if(!ST.list.length){$('#stStatus').textContent='No notes here. Move the song position or loop to where the singing is.';return;}
+  ST.tok++;ST.on=true;ST.i=0;ST.res=[];stButtons();stNext();}
+function stNext(){const n=ST.list[ST.i];if(MS.audio)MS.audio.currentTime=n.t0;$('#stLabel').textContent='Note '+(ST.i+1)+' of '+ST.list.length;$('#stNote').textContent=nn(n.m);$('#stTime').textContent='at '+fmtT(n.t0);stPlay();}
+function stPlay(){const n=ST.list[ST.i];ST.phase='play';ST.hold=0;ST.el=0;tone(n.m,ac().currentTime+0.05,1.0,0.22);ST.listenAt=performance.now()+1300;$('#stStatus').textContent='Listen…';setNeedle($('#stNeedle'),$('#stCents'),null);}
+function stDone(ok){ST.res.push(ok);ST.phase='gap';$('#stStatus').textContent=ok?'Got it!':'Moving on. You can loop back to this one.';const t=ST.tok;
+  setTimeout(()=>{if(t!==ST.tok)return;ST.i++;if(ST.i<ST.list.length)stNext();else stEnd();},700);}
+function stEnd(){const ok=ST.res.filter(Boolean).length,n=ST.list.length;ST.on=false;ST.phase='idle';stButtons();
+  $('#stLabel').textContent='Done';$('#stNote').textContent=ok+'/'+n;$('#stTime').textContent='';
+  $('#stStatus').textContent=ok===n?'Every note matched. Now sing the section along with the song.':'You matched '+ok+' of '+n+'. Run it again, then sing it with the song.';
+  if(MS.cur)log('mystep',{title:MS.cur.name,score:ok,of:n});if(MS.loopA!=null&&MS.audio)MS.audio.currentTime=MS.loopA;}
+function stStop(){ST.tok++;if(ST.on){ST.on=false;ST.phase='idle';$('#stStatus').textContent='Stopped.';}stButtons();}
+function stFrame(p,dt,now){if(!ST.on)return;const n=ST.list[ST.i];
+  if(ST.phase==='play'&&now>=ST.listenAt){ST.phase='listen';$('#stStatus').textContent='Your turn: sing '+nn(n.m);}
+  if(ST.phase!=='listen')return;ST.el+=dt;
+  if(p){const c=fold(p.midi,n.m)*100;setNeedle($('#stNeedle'),$('#stCents'),c,40);if(Math.abs(c)<=40)ST.hold+=dt;else ST.hold=Math.max(0,ST.hold-dt*0.6);
+    $('#stStatus').textContent=Math.abs(c)<=40?'Hold it…':c<0?'▲ A little higher':'▼ A little lower';}
+  else ST.hold=Math.max(0,ST.hold-dt*0.3);
+  if(ST.hold>=0.5)stDone(true);else if(ST.el>8)stDone(false);}
+$('#stStart').onclick=stStart;$('#stAgain').onclick=()=>{if(ST.on&&ST.phase!=='gap')stPlay();};$('#stSkip').onclick=()=>{if(ST.on&&ST.phase!=='gap')stDone(false);};$('#stStop').onclick=stStop;
+function msStopAll(){stStop();if(MS.audio&&!MS.audio.paused)MS.audio.pause();}
+
+function msFrame(p,dt,now){const s=MS.cur;if(!s)return;const a=MS.audio;let t=a?a.currentTime:0;const playing=!!a&&!a.paused;
+  if(playing&&MS.loopA!=null&&MS.loopB!=null&&t>=MS.loopB){a.currentTime=MS.loopA;t=MS.loopA;MS.lastIdx=-1;}
+  const ns=s.notes,k=noteAt(ns,t),ci=(k>=0&&t<ns[k].t1)?k:-1,nx=ns[k+1];
+  if(ST.on)stFrame(p,dt,now);
+  else{
+    const key=ci+'|'+(k+1);if(key!==MS.lblKey){MS.lblKey=key;$('#msNow').textContent=ci>=0?nn(ns[ci].m):'–';$('#msNext').textContent=nx?nn(nx.m):'–';}
+    if(playing&&ci>=0&&ci!==MS.lastIdx&&$('#msGuide').checked){const n=ns[ci];tone(n.m,ac().currentTime,Math.max(0.12,(n.t1-t)/a.playbackRate*0.95),0.13);}
+    if(playing)MS.lastIdx=ci;
+    let cue='',cls='';
+    if(playing&&MS.singOn&&p){const ref=ci>=0?ns[ci].m:(k>=0?ns[k].m:(nx?nx.m:Math.round(p.midi)));const d=fold(p.midi,ref);
+      MS.trace.push({t,m:ref+d,ok:Math.abs(d)<=0.5});if(MS.trace.length>4000)MS.trace.splice(0,1000);
+      if(ci>=0){const n=ns[ci],fr=(t-n.t0)/(n.t1-n.t0);if(fr>0.1&&fr<0.95){MS.tot[ci]++;if(Math.abs(d)<=0.5)MS.hits[ci]++;}
+        if(Math.abs(d)<=0.5){cue='✓ On the note';cls='ok';}else if(d<0){cue='▲ Go higher';cls='up';}else{cue='▼ Go lower';cls='up';}}}
+    else if(playing&&MS.singOn&&ci>=0)cue='Sing…';
+    const ce=$('#msCue');if(ce.textContent!==cue){ce.textContent=cue;ce.className='cue '+cls;}}
+  if(!MS.seeking&&now-MS.lastUi>120){MS.lastUi=now;$('#msTime').textContent=fmtT(t);$('#msSeek').value=s.duration?Math.round(t/s.duration*1000):0;}
+  msDraw(t);}
+
+function msDraw(t){const s=MS.cur;const {x,w,h}=fit($('#msCv'));const C=colors();x.clearRect(0,0,w,h);
+  const L=42,span=6,pps=(w-L)/span,play=L+(w-L)*0.3,X=tt=>play+(tt-t)*pps,tMin=t-(play-L)/pps,tMax=t+(w-play)/pps;
+  const lo=MS.lo,hi=MS.hi,rowH=(h-12)/(hi-lo+1),Y=m=>6+(hi-m+0.5)*rowH;
+  x.font='11px "IBM Plex Mono", monospace';
+  for(let m=lo;m<=hi;m++){const top=6+(hi-m)*rowH;if([1,3,6,8,10].includes(((m%12)+12)%12)){x.fillStyle=C.line;x.globalAlpha=0.25;x.fillRect(L,top,w-L,rowH);x.globalAlpha=1;}
+    if(m%12===0||(m-lo)%6===0){x.fillStyle=C.muted;x.fillText(nn(m),4,top+rowH/2+4);}}
+  if(MS.loopA!=null&&MS.loopB!=null){const a=Math.max(L,X(MS.loopA)),b=Math.min(w,X(MS.loopB));if(b>a){x.fillStyle=C.soft;x.globalAlpha=0.6;x.fillRect(a,0,b-a,h);x.globalAlpha=1;}
+    x.strokeStyle=C.accent;x.lineWidth=1;x.setLineDash([4,4]);[MS.loopA,MS.loopB].forEach(v=>{const px=X(v);if(px>=L&&px<=w){x.beginPath();x.moveTo(px,0);x.lineTo(px,h);x.stroke();}});x.setLineDash([]);}
+  x.save();x.beginPath();x.rect(L,0,w-L,h);x.clip();
+  const c=s.contour,hop=s.hop,o=s.off;x.strokeStyle=C.muted;x.globalAlpha=0.45;x.lineWidth=1.5;x.beginPath();let pen=false;
+  for(let i=Math.max(0,Math.floor((tMin-o)/hop));i<Math.min(c.length,Math.ceil((tMax-o)/hop));i++){const v=c[i];if(v!==v){pen=false;continue;}const px=X(i*hop+o),py=Y(v);if(pen)x.lineTo(px,py);else{x.moveTo(px,py);pen=true;}}
+  x.stroke();x.globalAlpha=1;
+  s.notes.forEach((n,i)=>{if(n.t1<tMin||n.t0>tMax)return;let col=C.note;
+    if(MS.scored&&MS.tot[i]>=4){const r=MS.hits[i]/MS.tot[i];col=r>=0.5?C.good:r>=0.25?C.warn:C.bad;}
+    if(t>=n.t0&&t<n.t1)col=C.accent;if(ST.on&&ST.list[ST.i]===n)col=C.accent;
+    const x0=X(n.t0),x1=X(n.t1);x.fillStyle=col;rr(x,x0+1,Y(n.m)-Math.max(3,rowH*0.38),Math.max(3,x1-x0-2),Math.max(6,rowH*0.76),4);x.fill();
+    if(x1-x0>34){x.fillStyle=C.muted;x.font='11px "IBM Plex Mono", monospace';x.fillText(nn(n.m),x0+3,Y(n.m)-Math.max(5,rowH*0.38)-3);}});
+  for(const pt of MS.trace){if(pt.t<t-3||pt.t>t+0.05)continue;x.fillStyle=pt.ok?C.ink:C.warn;x.beginPath();x.arc(X(pt.t),Y(pt.m),2.6,0,Math.PI*2);x.fill();}
+  x.restore();
+  x.strokeStyle=C.accent;x.lineWidth=2;x.beginPath();x.moveTo(play,0);x.lineTo(play,h);x.stroke();
+  if(!s.notes.length){x.fillStyle=C.muted;x.font='14px "Atkinson Hyperlegible", sans-serif';x.textAlign='center';x.fillText('No clear melody found in this file',(w+L)/2,h/2);x.textAlign='left';}}
+
+(async()=>{try{const all=await IDB.all();MS.songs=(all||[]).sort((a,b)=>b.added-a.added);}catch(e){MS.songs=[];}if(location.hash==='#mysongs')msRenderList();})();
+
 /* ---------- coach ---------- */
 const chat=$('#chat');const msgs=[];
 function md(text){const blocks=String(text).trim().split(/\n\s*\n/);return blocks.map(b=>{const lines=b.split('\n').filter(l=>l.trim());
@@ -841,9 +1121,9 @@ $$('#chips button').forEach(b=>b.onclick=()=>sendCoach(b.textContent));
 let samplePromise=null;
 function getSample(){if(samplePromise)return samplePromise;if(window.claude&&typeof window.claude.use==='function'){samplePromise=window.claude.use('sample').catch(()=>null);return samplePromise;}return Promise.resolve(null);}
 function learnerContext(){const r=S.range?('Range '+nn(S.range.low)+' to '+nn(S.range.high)+' ('+S.range.source+', closest to '+voiceType(S.range.low,S.range.high)+').'):'Range not measured yet.';
-  const rec=S.history.slice(-10).map(h=>h.kind==='pitch'?'pitch round ('+h.level+') '+h.score+'/5, average '+Math.abs(h.bias)+' cents '+(h.bias>=0?'sharp':'flat'):h.kind==='song'?'song "'+(h.title||h.song)+'" '+h.score+'% in tune':h.kind==='ear'?'ear training '+h.score+'/10'+(h.finest!=null?', finest gap '+h.finest+' cents':''):h.kind==='warmup'?'warm-up ('+h.what+')':'range set').join('; ');
+  const rec=S.history.slice(-10).map(h=>h.kind==='pitch'?'pitch round ('+h.level+') '+h.score+'/5, average '+Math.abs(h.bias)+' cents '+(h.bias>=0?'sharp':'flat'):h.kind==='song'?'song "'+(h.title||h.song)+'" '+h.score+'% in tune':h.kind==='mysong'?'own song "'+h.title+'" '+h.score+'% of notes landed':h.kind==='mystep'?'note-by-note practice on "'+h.title+'" '+h.score+'/'+h.of:h.kind==='ear'?'ear training '+h.score+'/10'+(h.finest!=null?', finest gap '+h.finest+' cents':''):h.kind==='warmup'?'warm-up ('+h.what+')':'range set').join('; ');
   return r+' Practice days so far: '+new Set(S.history.map(h=>h.date)).size+'. Recent activity (oldest first): '+(rec||'none yet')+'.';}
-const PREAMBLE='You are a warm, patient, practical singing coach inside a practice app called First Voice. The learner is an adult complete beginner who believes they cannot sing and has always wanted to. Use UK English spelling. Keep replies under 150 words unless they ask for more. Use plain language, no jargon without a quick explanation. Give at most one or two concrete exercises they can try right now, step by step. Be encouraging but honest; never flatter. Pitch-matching trouble is usually a trainable ear-voice coordination skill, so frame progress that way. If they mention pain, hoarseness lasting more than three weeks, or losing their voice, tell them to rest and see a GP or an ENT specialist. The app has these sections: Learn (short lessons on tone deafness myths, posture, breath support, vowels, humming resonance, a pitch-matching method, chest and head voice, vocal health, a four-week plan and a glossary), Ear (higher-or-lower game that adapts the gap in cents), Warm up (low breathing, lip-trill sirens, five-note humming), Range (measures lowest and highest comfortable notes), Pitch (match single notes, steps or leaps with a tuner; hold within 35 cents for 1.2 seconds), Songs (Twinkle Twinkle, Ode to Joy, Amazing Grace, Auld Lang Syne, all moved into their range, scored on pitch). Suggest sections when useful.\n\nLearner data: ';
+const PREAMBLE='You are a warm, patient, practical singing coach inside a practice app called First Voice. The learner is an adult complete beginner who believes they cannot sing and has always wanted to. Use UK English spelling. Keep replies under 150 words unless they ask for more. Use plain language, no jargon without a quick explanation. Give at most one or two concrete exercises they can try right now, step by step. Be encouraging but honest; never flatter. Pitch-matching trouble is usually a trainable ear-voice coordination skill, so frame progress that way. If they mention pain, hoarseness lasting more than three weeks, or losing their voice, tell them to rest and see a GP or an ENT specialist. The app has these sections: Learn (short lessons on tone deafness myths, posture, breath support, vowels, humming resonance, a pitch-matching method, chest and head voice, vocal health, a four-week plan and a glossary), Ear (higher-or-lower game that adapts the gap in cents), Warm up (low breathing, lip-trill sirens, five-note humming), Range (measures lowest and highest comfortable notes), Pitch (match single notes, steps or leaps with a tuner; hold within 35 cents for 1.2 seconds), Songs (Twinkle Twinkle, Ode to Joy, Amazing Grace, Auld Lang Syne, all moved into their range, scored on pitch), My songs (they upload their own song files; the app detects the melody notes, scores them on each note while singing along with higher/lower cues, and offers looping, slower speed, played guide notes and note-by-note practice; octaves are ignored so they can sing an octave above or below the recording). Suggest sections when useful.\n\nLearner data: ';
 const OFFLINE=[
  [/tune|flat|sharp|pitch|note/i,'The most common reason is that your ear and voice haven’t learned to coordinate yet, not that you’re tone deaf.\n\n1. Play one note in Pitch and hum it softly before singing it.\n2. If you’re off, slide slowly up or down until the dots go green.\n3. Notice how “right” feels, then repeat.\n\nFive minutes a day of this makes a real difference within a few weeks.'],
  [/breath|breathe|air/i,'Breathe low, into your belly, not your chest.\n\n1. Hand on your stomach, shoulders relaxed.\n2. Breathe in through your nose for 4; your hand moves out.\n3. Hiss out on “sss” for 8 or more, steady and even.\n\nThat steady hiss is the airflow you want under every sung note. The breathing exercise in Warm up runs this for you.'],
@@ -866,12 +1146,12 @@ $('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.p
 setTimeout(()=>{if(!(window.claude&&typeof window.claude.use==='function')){const n=$('#coachNote');n.hidden=false;n.innerHTML='<b>Offline tips mode.</b> The AI coach answers when this page is opened inside Claude. Here you’ll get built-in tips instead.';}},800);
 
 /* ---------- routing ---------- */
-const VIEWS=['today','learn','warmup','range','ear','pitch','songs','coach'];
-const FRAMES={range:rangeFrame,pitch:pitchFrame,songs:songFrame};
-function stopAll(){wuClear();ptStop();spStop();earStop();RC.which=null;}
+const VIEWS=['today','learn','warmup','range','ear','pitch','songs','mysongs','coach'];
+const FRAMES={range:rangeFrame,pitch:pitchFrame,songs:songFrame,mysongs:msFrame};
+function stopAll(){wuClear();ptStop();spStop();earStop();msStopAll();RC.which=null;}
 function route(){let v=(location.hash||'').slice(1);if(!VIEWS.includes(v))v='today';stopAll();
   $$('.view').forEach(s=>s.hidden=s.dataset.view!==v);$$('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-  onFrame=FRAMES[v]||null;const mb=$('#micbar');if(FRAMES[v]){const sec=$('.view[data-view="'+v+'"]');sec.querySelector('.hero').after(mb);mb.hidden=false;}else mb.hidden=true;if(v==='today')renderToday();if(v==='range')renderRange();if(v==='songs')selectSong(SP.prep?SP.prep.song.id:'twinkle');window.scrollTo(0,0);}
+  onFrame=FRAMES[v]||null;const mb=$('#micbar');if(FRAMES[v]){const sec=$('.view[data-view="'+v+'"]');sec.querySelector('.hero').after(mb);mb.hidden=false;}else mb.hidden=true;if(v==='today')renderToday();if(v==='range')renderRange();if(v==='songs')selectSong(SP.prep?SP.prep.song.id:'twinkle');if(v==='mysongs')msRenderList();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);
 SP.prep=prep(SONGS[0]);
 route();
